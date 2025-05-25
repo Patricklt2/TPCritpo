@@ -9,9 +9,9 @@ int main() {
     printf("Test 1: Secret = %d (Expected: 209)\n", secret1);
     assert(secret1 == 209);
 
-    // Test Case 2: Invalid inverse (should not happen in GF(257))
-    int x3[] = {1, 2};
-    int y3[] = {10, 20};
+    // Test Case 2: Invalid inverse
+    int x2[] = {1, 2};
+    int y2[] = {10, 20};
     printf("Testing mod_inverse(0)...\n");
     assert(mod_inverse(0) == -1);  // 0 has no inverse
 
