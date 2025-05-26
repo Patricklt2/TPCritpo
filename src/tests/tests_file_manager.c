@@ -179,13 +179,6 @@ void test_bmp_signature() {
 void test_read_valid_bmp() {
     const char* filename = "src/assets/Alfred.bmp";
 
-    // Create a minimal valid 8-bit grayscale BMP with known pixel data and palette
-    // You could create a helper function to write a test BMP or use your write_bmp_257
-
-    // For brevity, assume write_test_bmp_8bit_grayscale creates a 2x2 BMP file:
-    // pixel values: [0, 1; 2, 3]
-    // palette grayscale 0..255
-
     BMP257Image* img = read_bmp_257(filename);
     assert(img != NULL);
     assert(img->info_header.width == 300);
@@ -226,9 +219,6 @@ void test_read_invalid_signature() {
 }
 
 void test_read_non_8bit_bmp() {
-    // Create a BMP file with bits_per_pixel != 8 in info header
-    // Simplest is to copy a valid BMP and patch bits_per_pixel field
-
     FILE* f = fopen("non8bit.bmp", "wb");
     BMPFileHeader fh = {0x4D42, 0, 0, 0, 54 + 256*4 + 4}; // dummy sizes
     BMPInfoHeader ih = {40, 2, 2, 1, 24, 0, 0, 2835, 2835, 256, 256}; // 24bpp here
@@ -256,8 +246,6 @@ void test_read_non_8bit_bmp() {
 }
 
 void test_read_palette_not_grayscale() {
-    // Create valid BMP headers and palette but set one palette entry to non-gray
-
     FILE* f = fopen("bad_palette.bmp", "wb");
     BMPFileHeader fh = {0x4D42, 0, 0, 0, 54 + 256*4 + 4};
     BMPInfoHeader ih = {40, 2, 2, 1, 8, 0, 4, 2835, 2835, 256, 256};
