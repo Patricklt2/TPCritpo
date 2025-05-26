@@ -1,4 +1,4 @@
-#include "headers/lagrange.h"
+#include <lagrange.h>
 
 int mod_inverse(int a) {
     int t = 0, nt = 1, r = MOD, nr = a;

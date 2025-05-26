@@ -1,5 +1,4 @@
-#include "headers/file_manager.h"
-
+#include <file_manager.h>
 
 BMP257Image* read_bmp_257(const char* filename) {
     FILE* file = fopen(filename, "rb");

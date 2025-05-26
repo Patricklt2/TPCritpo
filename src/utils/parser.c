@@ -1,5 +1,5 @@
 
-#include "headers/parser.h"
+#include <parser.h>
 
 static bool file_exists(const char *filename) {
     FILE *file = fopen(filename, "r");
