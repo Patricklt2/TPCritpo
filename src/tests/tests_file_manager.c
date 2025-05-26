@@ -32,7 +32,7 @@ int fileManagerTests() {
     return 0;
 }
 
-int test_create_valid_2x2() {
+void test_create_valid_2x2() {
 
     int width = 2, height = 2;
     Mod257Pixel** pixels = malloc(height * sizeof(Mod257Pixel*));
@@ -58,8 +58,6 @@ int test_create_valid_2x2() {
 
     free_bmp257_image(img);
     printf("Test 1: OK!\n");
-
-    return 0;
 }
 
 void test_create_invalid_dimensions() {

@@ -7,7 +7,7 @@
 #include <assert.h>
 
 int test_create_valid_2x2();
-int fileManagerTests();
+void fileManagerTests();
 void test_create_invalid_dimensions() ;
 void test_create_with_257_pixel();
 void test_write_valid_bmp();
