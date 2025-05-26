@@ -277,3 +277,64 @@ BMP257Image* create_bmp_257(Mod257Pixel** pixels, int width, int height) {
 
     return image;
 }
+
+int write_bmp_257(const BMP257Image* image, const char* filename){
+
+    if (!image || !filename) {
+        fprintf(stderr, "Invalid image or filename\n");
+        return -1;
+    }
+
+    FILE* file = fopen(filename, "wb");
+    if (!file) {
+        perror("Error opening file for writing");
+        return -1;
+    }
+
+    // Write BMP headers
+    if (fwrite(&image->file_header, sizeof(BMPFileHeader), 1, file) != 1 ||
+        fwrite(&image->info_header, sizeof(BMPInfoHeader), 1, file) != 1) {
+        fclose(file);
+        perror("Error writing headers");
+        return -1;
+    }
+
+    // Write color palette
+    if (fwrite(image->palette, sizeof(RGBQuad), 256, file) != 256) {
+        fclose(file);
+        perror("Error writing palette");
+        return -1;
+    }
+
+    // Write pixel data
+    int height = abs(image->info_header.height);
+    int row_padded = ((image->info_header.width + 3) / 4) * 4;
+    uint8_t* row_buffer = malloc(row_padded);
+    if (!row_buffer) {
+        fclose(file);
+        perror("Row buffer allocation failed");
+        return -1;
+    }
+
+    // Write rows (BMP stores bottom row first)
+    for (int y = height - 1; y >= 0; y--) {
+        for (int x = 0; x < image->info_header.width; x++) {
+            row_buffer[x] = get_mod257_value(image->pixels[y][x]);
+        }
+        
+        // Fill padding bytes
+        memset(row_buffer + image->info_header.width, 0, row_padded - image->info_header.width);
+
+        if (fwrite(row_buffer, 1, row_padded, file) != row_padded) {
+            free(row_buffer);
+            fclose(file);
+            perror("Error writing pixel data");
+            return -1;
+        }
+    }
+
+    free(row_buffer);
+    fclose(file);
+    return 0;
+
+}

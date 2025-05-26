@@ -131,4 +131,12 @@ uint16_t mod257_inv(uint16_t a);
  */
 BMP257Image* create_bmp_257(Mod257Pixel** pixels, int width, int height);
 
+/**
+ * Converts a BMP257Image to a file
+ * @param image Pointer to the BMP257Image structure
+ * @param filename Path to save the BMP file
+ * @return 0 on success, -1 on error
+ */
+int write_bmp_257(const BMP257Image* image, const char* filename);
+
 #endif
