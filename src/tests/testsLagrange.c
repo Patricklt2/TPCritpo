@@ -1,7 +1,7 @@
 #include <lagrange.h>
 #include <assert.h>
 
-int main() {
+int lagrangeTests() {
     // Test Case 1: Basic (k=2)
     int x1[] = {1, 2};          // Shadow numbers
     int y1[] = {75, 198};       // Shadow values (from f(x) = 209 + 123x)

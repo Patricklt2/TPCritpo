@@ -1,6 +1,6 @@
 GCC=gcc
 
-GCCFLAGS=-Wall -fdiagnostics-color=always -pedantic
+GCCFLAGS=-Wall -fdiagnostics-color=always -pedantic -I./src/utils/headers
 
 ifneq ($(DEBUG), 0)
 GCCFLAGS += -g -fsanitize=address
@@ -23,10 +23,10 @@ before:
 	mkdir -p bin
 
 $(EXEC):
-	$(GCC) $(GCCFLAGS) -I./src/utils/headers $(UTILS_SRC) $(MAIN_SRC) -o $@
+	$(GCC) $(GCCFLAGS) $(UTILS_SRC) $(MAIN_SRC) -o $@
 
 $(EXEC_TESTS):
-	$(GCC) $(GCCFLAGS) -I./src/utils/headers $(UTILS_SRC) $(TESTS_SRC) -o $@
+	$(GCC) $(GCCFLAGS) -I./src/tests/headers $(UTILS_SRC) $(TESTS_SRC) -o $@
 
 clean:
 	rm -rf bin

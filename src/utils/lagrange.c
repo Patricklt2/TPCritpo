@@ -4,8 +4,12 @@ int mod_inverse(int a) {
     int t = 0, nt = 1, r = MOD, nr = a;
     while (nr != 0) {
         int q = r / nr;
-        int tmp = nt; nt = t - q * nt; t = tmp;
-        tmp = nr; nr = r - q * nr; r = tmp;
+        int tmp = nt; 
+        nt = t - q * nt; 
+        t = tmp;
+        tmp = nr; 
+        nr = r - q * nr; 
+        r = tmp;
     }
     if (r > 1) return -1; // Si no hay inversa
     return (t < 0) ? t + MOD : t;
