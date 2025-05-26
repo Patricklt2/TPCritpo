@@ -1,5 +1,4 @@
-#include <lagrange.h>
-#include <assert.h>
+#include <tests_lagrange.h>
 
 int lagrangeTests() {
     // Test Case 1: Basic (k=2)

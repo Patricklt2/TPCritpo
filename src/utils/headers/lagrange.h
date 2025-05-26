@@ -9,6 +9,8 @@
 /**
 * Inverso modular con algoritmo extendido de Euclides (SE UTILIZA MOD 257)
 * @param a entero del que se quiere calcular el inverso 
+*
+* @return inverso de a modulo MOD, o -1 si no existe inverso
 */
 int mod_inverse(int a);
 
@@ -17,6 +19,8 @@ int mod_inverse(int a);
 * @param xi numero de sombra
 * @param yi valor de la sombra
 * @param k numero de sombras minimo para reconstruir el secreto
+*
+* @return secreto recuperado
 */
 int lagrange_interpolate(int x[], int y[], int k);
 #endif
