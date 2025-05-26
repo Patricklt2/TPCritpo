@@ -171,7 +171,6 @@ void free_bmp257_image(BMP257Image* image) {
     }
 }
 
-
 uint16_t mod257_add(uint16_t a, uint16_t b) {
     uint16_t sum = a + b;
     return sum >= 257 ? sum - 257 : sum;

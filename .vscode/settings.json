@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "stdint.h": "c",
-        "permutation_table.h": "c"
+        "permutation_table.h": "c",
+        "file_manager.h": "c"
     }
 }
