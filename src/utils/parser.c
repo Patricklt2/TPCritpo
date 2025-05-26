@@ -1,10 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <getopt.h>
-#include <stdbool.h>
-#include "parser.h"
+
+#include "headers/parser.h"
 
 static bool file_exists(const char *filename) {
     FILE *file = fopen(filename, "r");

@@ -1,7 +1,5 @@
 
-
-#include <stdio.h>
-#include "./utils/parser.h"
+#include "./utils/headers/parser.h"
 
  int main(int argc, char *argv[]) {
     if (parse_args(argc, argv)) {

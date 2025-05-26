@@ -1,7 +1,4 @@
-#include <stdio.h>
-#include <limits.h>
-#include <stdlib.h>
-#include <stdint.h>
+#include <headers/Permutation_Table.h>
 #define MAX 50
 #define SET 10
 /* variable global */

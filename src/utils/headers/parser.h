@@ -5,6 +5,8 @@
 #include <string.h>
 #include <getopt.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #define FLAGS_AMOUNT 7
 
