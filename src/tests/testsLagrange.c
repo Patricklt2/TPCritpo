@@ -1,4 +1,4 @@
-#include "../utils/lagrange.h"
+#include <lagrange.h>
 #include <assert.h>
 
 int main() {
