@@ -14,7 +14,7 @@ MAIN_SRC = src/main.c
 EXEC=./bin/main.out
 EXEC_TESTS=./bin/tests.out
 
-all: before $(EXEC)
+all: clean before $(EXEC)
 
 tests: before $(EXEC_TESTS)
 	$(EXEC_TESTS)

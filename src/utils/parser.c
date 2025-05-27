@@ -32,7 +32,7 @@ bool parse_args(int argc, char **argv) {
     char *secret_file = NULL; 
     char *endptr;
 
-    while ((c = getopt_long(argc, argv, "drk:n:", long_options, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "hdrk:n:", long_options, NULL)) != -1) {
         switch (c) {
             case 'd':
                 printf("Detected -d flag\n");
@@ -55,8 +55,8 @@ bool parse_args(int argc, char **argv) {
             case 'k':
                 printf("Detected -k flag with value %s\n", optarg);
                 k = strtol(optarg, &endptr, 10);
-                if (*endptr != '\0' || k <= 0) {
-                    fprintf(stderr, "Error: -k requires a positive integer\n");
+                if (*endptr != '\0' || k < 2 || k > 10) {
+                    fprintf(stderr, "Error: -k requires a positive integer between 2 and 10\n");
                     free(secret_file);
                     return false;
                 }
@@ -70,7 +70,7 @@ bool parse_args(int argc, char **argv) {
                     return false;
                 }
                 n = strtol(optarg, &endptr, 10);
-                if (*endptr != '\0' || n <= 0) {
+                if (*endptr != '\0' || n < 2) {
                     fprintf(stderr, "Error: -n requires a positive integer\n");
                     free(secret_file);
                     return false;
@@ -89,6 +89,17 @@ bool parse_args(int argc, char **argv) {
             case 'i': // --dir
                 printf("Detected --dir flag with value %s\n", optarg);
                 break;
+            case 'h':
+                printf("Usage: %s (-d | -r) --secret <image.bmp> -k <number> [-n <number>] [--dir <directory>]\n", argv[0]);
+                printf("Options:\n");
+                printf("  -h,                 For help with the commands\n");
+                printf("  -d,                 Distribute the secret image\n");
+                printf("  -r                  Recover the secret image\n");
+                printf("  -k <number>         Set the number of shares (2-10)\n");
+                printf("  -n <number>         Set the total number of images (optional, only with -d)\n");
+                printf("  --secret <file>     Specify the secret image file (must be .bmp)\n");
+                printf("  --dir <directory>   Specify the output directory (optional)\n");
+                return true;
             default:
                 fprintf(stderr, "Error: Unknown option\n");
                 free(secret_file);
