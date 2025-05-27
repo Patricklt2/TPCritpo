@@ -19,6 +19,6 @@ typedef struct {
     char *dir;
 } Args;
 
-bool parse_args(int argc, char **argv);
+bool parse_args(int argc, char **argv, Args* args);
 
 #endif // PARSER_H

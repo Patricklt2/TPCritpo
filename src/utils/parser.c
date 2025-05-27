@@ -21,7 +21,7 @@ static struct option long_options[] = {
     {0, 0, 0, 0}
 };
 
-bool parse_args(int argc, char **argv) {
+bool parse_args(int argc, char **argv, Args *args) {
     int c;
     bool distribute = false;
     bool recover = false;
@@ -64,11 +64,12 @@ bool parse_args(int argc, char **argv) {
                 break;
             case 'n':       // optional
                 printf("Detected -n flag with value %s\n", optarg);
+                /*
                 if (recover) {
                     fprintf(stderr, "Error: -n is only valid with -d\n");
                     free(secret_file);
                     return false;
-                }
+                }*/
                 n = strtol(optarg, &endptr, 10);
                 if (*endptr != '\0' || n < 2) {
                     fprintf(stderr, "Error: -n requires a positive integer\n");
