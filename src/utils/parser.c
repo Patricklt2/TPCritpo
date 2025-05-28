@@ -30,6 +30,7 @@ bool parse_args(int argc, char **argv, Args *args) {
     int k = 0;
     int n = 0;
     char *secret_file = NULL; 
+    char *dir = NULL;
     char *endptr;
 
     while ((c = getopt_long(argc, argv, "hdrk:n:", long_options, NULL)) != -1) {
@@ -39,6 +40,7 @@ bool parse_args(int argc, char **argv, Args *args) {
                 if (recover) {
                     fprintf(stderr, "Error: -d and -r are mutually exclusive\n");
                     free(secret_file);
+                    free(dir);
                     return false;
                 }
                 distribute = true;
@@ -48,6 +50,7 @@ bool parse_args(int argc, char **argv, Args *args) {
                 if (distribute) {
                     fprintf(stderr, "Error: -d and -r are mutually exclusive\n");
                     free(secret_file);
+                    free(dir);
                     return false;
                 }
                 recover = true;
@@ -74,6 +77,7 @@ bool parse_args(int argc, char **argv, Args *args) {
                 if (*endptr != '\0' || n < 2) {
                     fprintf(stderr, "Error: -n requires a positive integer\n");
                     free(secret_file);
+                    free(dir);
                     return false;
                 }
                 break;
@@ -82,6 +86,7 @@ bool parse_args(int argc, char **argv, Args *args) {
                 if (!is_bmp_file(optarg)) {
                     fprintf(stderr, "Error: --secret must be a .bmp file\n");
                     free(secret_file);
+                    free(dir);
                     return false;
                 }
                 secret_file = strdup(optarg); 
@@ -89,6 +94,7 @@ bool parse_args(int argc, char **argv, Args *args) {
                 break;
             case 'i': // --dir
                 printf("Detected --dir flag with value %s\n", optarg);
+                dir = strdup(optarg);
                 break;
             case 'h':
                 printf("Usage: %s (-d | -r) --secret <image.bmp> -k <number> [-n <number>] [--dir <directory>]\n", argv[0]);
@@ -104,6 +110,7 @@ bool parse_args(int argc, char **argv, Args *args) {
             default:
                 fprintf(stderr, "Error: Unknown option\n");
                 free(secret_file);
+                free(dir);
                 return false;
         }
     }
@@ -112,29 +119,41 @@ bool parse_args(int argc, char **argv, Args *args) {
     if (!distribute && !recover) {
         fprintf(stderr, "Error: Either -d or -r must be specified\n");
         free(secret_file);
+        free(dir);
         return false;
     }
     if (!secret_set) {
         fprintf(stderr, "Error: --secret is required\n");
         free(secret_file);
+        free(dir);
         return false;
     }
     if (!k_set) {
         fprintf(stderr, "Error: -k is required\n");
         free(secret_file);
+        free(dir);
         return false;
     }
     if (distribute && secret_file && !file_exists(secret_file)) {
         fprintf(stderr, "Error: Secret file %s does not exist for -d\n", secret_file);
         free(secret_file);
+        free(dir);
         return false;
     }
     if (n != 0 && n < k) {
         fprintf(stderr, "Error: n must be >= k\n");
         free(secret_file);
+        free(dir);
         return false;
     }
 
-    free(secret_file);
+    // Asignar valores a args
+    args->distribute = distribute;
+    args->recover = recover;
+    args->secret = secret_file; 
+    args->k = k;
+    args->n = n ? n : k; // Si n no se especifica, usar k
+    args->dir = dir;
+
     return true;
 }
