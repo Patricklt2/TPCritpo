@@ -12,7 +12,7 @@
         printf("Parsing succeeded\n");
         printf("Stating processing...\n");
         // Here you would call the appropriate functions based on the parsed arguments
-        const char* coverfiles[] = {"Alfredssd.bmp","Albertssd.bmp","Audreyssd.bmp","Evassd.bmp","Facundo.bmp","Gustavossd.bmp","Jamesssd.bmp","Marilyssd.bmp"};
+        const char* coverfiles[] = {"../src/assets/Alfredssd.bmp","../src/assets/Albertssd.bmp","../src/assets/Audreyssd.bmp","../src/assets/Evassd.bmp","../src/assets/Facundo.bmp","../src/assets/Gustavossd.bmp","../src/assets/Jamesssd.bmp","../src/assets/Marilyssd.bmp"};
         if ( arguments->distribute ){
             if (  arguments->n < arguments->k ) {
                 fprintf(stderr, "Error: n must be greater than or equal to k\n");
