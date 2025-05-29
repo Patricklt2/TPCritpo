@@ -1,12 +1,8 @@
 #include <file_manager.h>
 
 BMP257Image* read_bmp_257(const char* filename) {
-    char* base_path = "../src/assets/";
-    char* complete_filename = malloc(strlen(filename) + strlen(base_path) + 1);
-    complete_filename = strcpy(complete_filename, base_path);
-    complete_filename = strcat(complete_filename, filename);
+    FILE* file = fopen(filename, "rb");
 
-    FILE* file = fopen(complete_filename, "rb");
     if (!file) {
         perror("Error opening file");
         return NULL;
@@ -139,7 +135,6 @@ BMP257Image* read_bmp_257(const char* filename) {
             }
         }
     }
-    free(complete_filename);
     free(row_buffer);
     fclose(file);
     return image;
@@ -276,7 +271,31 @@ BMP257Image* create_bmp_257(Mod257Pixel** pixels, int width, int height) {
         image->palette[i].reserved = 0;
     }
 
-    image->pixels = pixels; // Copy pixel data
+    // If im not copying pixels as it might be NULL, allocate memory for them
+
+   if (pixels) {
+        image->pixels = pixels;
+    } else {
+        image->pixels = malloc(height * sizeof(Mod257Pixel*));
+        if (!image->pixels) {
+            perror("Pixel row allocation failed");
+            free(image->palette);
+            free(image);
+            return NULL;
+        }
+
+        for (int i = 0; i < height; i++) {
+            image->pixels[i] = malloc(width * sizeof(Mod257Pixel));
+            if (!image->pixels[i]) {
+                for (int j = 0; j < i; j++) free(image->pixels[j]);
+                free(image->pixels);
+                free(image->palette);
+                free(image);
+                perror("Pixel column allocation failed");
+                return NULL;
+            }
+        }
+    }
 
     return image;
 }
