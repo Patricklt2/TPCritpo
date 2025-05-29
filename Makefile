@@ -21,6 +21,7 @@ tests: before $(EXEC_TESTS)
 
 before:
 	mkdir -p bin
+	mkdir -p src/encodings
 
 $(EXEC):
 	$(GCC) $(GCCFLAGS) $(UTILS_SRC) $(MAIN_SRC) -o $@
