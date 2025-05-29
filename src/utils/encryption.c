@@ -92,6 +92,10 @@ int shamir_distribute(int shades_count, const char* file_name, int images_count,
                 coeffs[j] = rand() % 257;
 
             for (int i = 0; i < images_count; ++i) {
+                if (!shares[i] || !shares[i]->pixels || !shares[i]->pixels[y]) {
+                    fprintf(stderr, "NULL pointer detected: share %d, y %d\n", i, y);
+                    exit(1);
+                }
                 uint16_t xv = i + 1, yv = 0, pow = 1;
                 for (int j = 0; j < shades_count; ++j) {
                     yv = mod257_add(yv,
