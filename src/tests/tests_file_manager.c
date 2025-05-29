@@ -13,7 +13,7 @@ long get_file_size(const char* filename) {
 //---------------------------------Begin Tests---------------------------------
 
 
-int fileManagerTests() {
+void fileManagerTests() {
     test_create_valid_2x2();
     test_create_invalid_dimensions();
     test_create_with_257_pixel();

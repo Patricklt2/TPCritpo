@@ -6,7 +6,7 @@
 #include <lagrange.h>
 #include <assert.h>
 
-int lagrangeTests();
-int inverseModTests();
+void lagrangeTests();
+void inverseModTests();
 
 #endif

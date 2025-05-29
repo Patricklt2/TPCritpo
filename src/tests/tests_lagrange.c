@@ -1,7 +1,7 @@
 #include <tests_lagrange.h>
 
 // Test cases for lagrange_interpolate function
-int lagrangeTests() {
+void lagrangeTests() {
     int x1[] = {1, 2};          // Shadow numbers
     int y1[] = {75, 198};       // Shadow values
     int secret1 = lagrange_interpolate(x1, y1, 2);
@@ -58,11 +58,10 @@ int lagrangeTests() {
     assert(secret10 == expected10);
 
     printf("OK\nAll lagrange tests passed!\n");
-    return 0;
 }
 
 // Test cases for mod_inverse function
-int inverseModTests() {
+void inverseModTests() {
 
     printf("Test 1: ");
     assert(mod_inverse(1) == 1);
@@ -80,5 +79,4 @@ int inverseModTests() {
     assert(mod_inverse(256) == 256);
 
     printf("OK!\nAll inverse modulo tests passed!\n");
-    return 0;
 }
