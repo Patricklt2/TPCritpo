@@ -139,4 +139,17 @@ BMP257Image* create_bmp_257(Mod257Pixel** pixels, int width, int height);
  */
 int write_bmp_257(const BMP257Image* image, const char* filename);
 
+/**
+ * Embeds a seed value into the reserved fields of a BMP257Image
+ * @param image Pointer to the BMP257Image structure
+ * @param seed Seed value (0-65535) to embed
+ */
+void embed_seed(BMP257Image* image, uint16_t seed);
+
+/**
+ * Embeds a seed value into the reserved fields of a BMP257Image
+ * @param image Pointer to the BMP257Image structure
+ * @param index shadow index value to embed
+ */
+void embed_shadow_index(BMP257Image* image, uint16_t index);
 #endif

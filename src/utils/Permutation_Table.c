@@ -27,3 +27,9 @@ uint8_t nextChar(void) {
     return (uint8_t)(seed >> 40);
 }
 
+void generate_permutation_table(uint16_t* R, int size, uint16_t seed) {
+    setSeed(seed);
+    for (int i = 0; i < size; i++) {
+        R[i] = nextChar() % size;  // Ensure values are in [0, size-1]
+    }
+}

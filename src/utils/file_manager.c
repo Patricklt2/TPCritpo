@@ -219,7 +219,7 @@ uint16_t mod257_inv(uint16_t a) {
 
 BMP257Image* create_bmp_257(Mod257Pixel** pixels, int width, int height) {
     // Validate dimensions
-    if (width <= 0 || height <= 0) {
+    if (width < 0 || height < 0) {
         fprintf(stderr, "Invalid image dimensions\n");
         return NULL;
     }
@@ -364,4 +364,12 @@ int write_bmp_257(const BMP257Image* image, const char* filename){
     fclose(file);
     return 0;
 
+}
+
+void embed_seed(BMP257Image* image, uint16_t seed) {
+    image->file_header.reserved1 = seed;
+}
+
+void embed_shadow_index(BMP257Image* image, uint16_t index) {
+    image->file_header.reserved2 = index;
 }

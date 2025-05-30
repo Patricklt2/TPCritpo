@@ -48,6 +48,9 @@ static int hide_share_in_cover(const BMP257Image* share, const char* cover_file,
         }
     }
 
+    cover->file_header.reserved1 = share->file_header.reserved1; // guardo seed
+    cover->file_header.reserved2 = share->file_header.reserved2; // guardo número de share
+
     int res = write_bmp_257(cover, output_file);
     free_bmp257_image(cover);
     return res;
@@ -59,7 +62,9 @@ static int hide_share_in_cover(const BMP257Image* share, const char* cover_file,
 
 int shamir_distribute(int shades_count, const char* file_name, int images_count, const char** cover_files){
     if (shades_count <= 0 || images_count <= 0 || shades_count > images_count) return -1;
-    srand((unsigned)time(NULL));
+
+    uint16_t seed = (unsigned)time(NULL) % UINT16_MAX; 
+    srand(seed);
 
     // 1) Leemos imagen secreta
     BMP257Image* original = read_bmp_257(file_name);
@@ -75,6 +80,8 @@ int shamir_distribute(int shades_count, const char* file_name, int images_count,
     BMP257Image** shares = malloc(images_count * sizeof(BMP257Image*)); 
     for (int i = 0; i < images_count; ++i) {
         shares[i] = create_bmp_257(NULL, w, h);
+        shares[i]->file_header.reserved1 = seed;  // guardo seed
+        shares[i]->file_header.reserved2 = i + 1; // para identificar el share
         if (!shares[i]) {
             fprintf(stderr, "Error in the creation of a share %d\n", i+1);
             return -1;
