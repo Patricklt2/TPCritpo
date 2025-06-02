@@ -106,7 +106,7 @@ bool parse_args(int argc, char **argv, Args *args) {
                 printf("  -n <number>         Set the total number of images (optional, only with -d)\n");
                 printf("  --secret <file>     Specify the secret image file (must be .bmp)\n");
                 printf("  --dir <directory>   Specify the output directory (optional)\n");
-                return true;
+                return false;
             default:
                 fprintf(stderr, "Error: Unknown option\n");
                 free(secret_file);
