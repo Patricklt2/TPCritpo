@@ -3,7 +3,7 @@
 
 #include "file_manager.h"
 #include <time.h>
-
+#include "Permutation_Table.h"
 /**
  * Distributes a secret image into multiple shares using Shamir's Secret Sharing
  * @param shades_count Number of shares to create (k)
