@@ -13,8 +13,8 @@
         printf("Parsing succeeded\n");
         printf("Stating processing...\n");
         // Here you would call the appropriate functions based on the parsed arguments
-        const char* coverfiles[] = {"../src/assets/Alfredssd.bmp","../src/assets/Albertssd.bmp","../src/assets/Audreyssd.bmp","../src/assets/Evassd.bmp","../src/assets/Facundo.bmp","../src/assets/Gustavossd.bmp","../src/assets/Jamesssd.bmp","../src/assets/Marilynssd.bmp"};
-        const char* encodedFiles[] = {"../src/encodings/stego_share_1.bmp", "../src/encodings/stego_share_2.bmp", "../src/encodings/stego_share_3.bmp", "../src/encodings/stego_share_4.bmp", "../src/encodings/stego_share_5.bmp", "../src/encodings/stego_share_6.bmp", "../src/encodings/stego_share_7.bmp", "../src/encodings/stego_share_8.bmp"};
+        const char* coverfiles[] = {"assets/Alfredssd.bmp","assets/Albertssd.bmp","assets/Audreyssd.bmp","assets/Evassd.bmp","assets/Facundo.bmp","assets/Gustavossd.bmp","assets/Jamesssd.bmp","assets/Marilynssd.bmp"};
+        const char* encodedFiles[] = {"encodings/stego_share_1.bmp", "encodings/stego_share_2.bmp", "encodings/stego_share_3.bmp", "encodings/stego_share_4.bmp", "encodings/stego_share_5.bmp", "encodings/stego_share_6.bmp", "encodings/stego_share_7.bmp", "encodings/stego_share_8.bmp"};
         if ( arguments->distribute ){
             if (  arguments->n < arguments->k ) {
                 fprintf(stderr, "Error: n must be greater than or equal to k\n");

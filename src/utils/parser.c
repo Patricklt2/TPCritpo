@@ -134,12 +134,19 @@ bool parse_args(int argc, char **argv, Args *args) {
         free(dir);
         return false;
     }
-    if (distribute && secret_file && !file_exists(secret_file)) {
+
+    char* base_path = "./src/";
+    char* complete_filename = malloc(strlen(secret_file) + strlen(base_path) + 1);
+    complete_filename = strcpy(complete_filename, base_path);
+
+    if (distribute && secret_file && !file_exists(complete_filename)) {
         fprintf(stderr, "Error: Secret file %s does not exist for -d\n", secret_file);
         free(secret_file);
         free(dir);
+        free(complete_filename);
         return false;
     }
+    free(complete_filename);
     if (n != 0 && n < k) {
         fprintf(stderr, "Error: n must be >= k\n");
         free(secret_file);

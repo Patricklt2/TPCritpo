@@ -31,6 +31,7 @@ $(EXEC_TESTS):
 
 clean:
 	rm -rf bin
+	rm -rf src/encodings
 
 .PHONY: all clean tests
 

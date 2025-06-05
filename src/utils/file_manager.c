@@ -1,7 +1,11 @@
 #include <file_manager.h>
 
 BMP257Image* read_bmp_257(const char* filename) {
-    FILE* file = fopen(filename, "rb");
+    char* base_path = "./src/";
+    char* complete_filename = malloc(strlen(filename) + strlen(base_path) + 1);
+    complete_filename = strcpy(complete_filename, base_path);
+    complete_filename = strcat(complete_filename, filename);
+    FILE* file = fopen(complete_filename, "rb");
 
     if (!file) {
         perror("Error opening file");
@@ -137,6 +141,7 @@ BMP257Image* read_bmp_257(const char* filename) {
     }
     free(row_buffer);
     fclose(file);
+    free(complete_filename);
     return image;
 }
 
@@ -307,7 +312,7 @@ int write_bmp_257(const BMP257Image* image, const char* filename){
         return -1;
     }
 
-    char* base_path = "../src/encodings/";
+    char* base_path = "./src/encodings/";
     char* complete_filename = malloc(strlen(filename) + strlen(base_path) + 1);
     complete_filename = strcpy(complete_filename, base_path);
     complete_filename = strcat(complete_filename, filename);

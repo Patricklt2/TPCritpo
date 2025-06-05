@@ -10,7 +10,7 @@
  * @param output_file Ruta donde escribir el BMP esteganografiado.
  * @return 0 en éxito, -1 en error.
  */
-static int hide_share_in_cover(const BMP257Image* share, const char* cover_file, const char* output_file){
+static int hide_share_bit_in_cover(const BMP257Image* share, const char* cover_file, const char* output_file, int bit_index){
     BMP257Image* cover = read_bmp_257(cover_file);
     if (!cover) {
         fprintf(stderr, "No puedo leer portada: %s\n", cover_file);
@@ -19,37 +19,27 @@ static int hide_share_in_cover(const BMP257Image* share, const char* cover_file,
 
     int w = cover->info_header.width;
     int h = cover->info_header.height;
-    if (w != share->info_header.width ||
-        h != share->info_header.height)
-    {
-        fprintf(stderr, "Dimensiones no coinciden (%dx%d vs %dx%d)\n",
-                w, h,
-                share->info_header.width,
-                share->info_header.height);
+    int sw = share->info_header.width;
+    int sh = share->info_header.height;
+
+    if (w != sw || h != sh) {
+        fprintf(stderr, "La portadora y el share deben tener el mismo tamaño.\n");
         free_bmp257_image(cover);
         return -1;
     }
 
-    // Por cada píxel, tomo el valor del share (0–256), lo convierto a byte (0–255 → 0–7 bits)
-    // y escondo su bit más significativo en el LSB de la portadora.
-    // Si necesitas más capacidad podrías usar más bits o más portadoras.
-    for (int y = 0; y < h; ++y) {
-        for (int x = 0; x < w; ++x) {
-            uint16_t share_val = get_mod257_value(share->pixels[y][x]);
-            uint8_t share_msb = (share_val >> 7) & 0x1; // bit 7 de 0–256
-
-            // obtengo el píxel de la portadora
-            Mod257Pixel pix = cover->pixels[y][x];
-            uint8_t cover_val = pix.value;
-
-            // reemplazo el LSB de cover_val por el bit msb del share
-            cover_val = (cover_val & 0xFE) | share_msb;
+    for (int y = 0; y < sh; ++y) {
+        for (int x = 0; x < sw; ++x) {
+            uint8_t share_val = get_mod257_value(share->pixels[y][x]) & 0xFF;
+            uint8_t share_bit = (share_val >> bit_index) & 0x1;
+            uint8_t cover_val = cover->pixels[y][x].value;
+            cover_val = (cover_val & 0xFE) | share_bit;
             cover->pixels[y][x] = value_to_mod257_pixel(cover_val);
         }
     }
 
-    cover->file_header.reserved1 = share->file_header.reserved1; // guardo seed
-    cover->file_header.reserved2 = share->file_header.reserved2; // guardo número de share
+    cover->file_header.reserved1 = share->file_header.reserved1;
+    cover->file_header.reserved2 = share->file_header.reserved2;
 
     int res = write_bmp_257(cover, output_file);
     free_bmp257_image(cover);
@@ -121,15 +111,12 @@ int shamir_distribute(int shades_count, const char* file_name, int images_count,
     for (int i = 0; i < images_count; ++i) {
         char out[256];
         snprintf(out, sizeof(out), "stego_share_%d.bmp", i+1);
-        if (hide_share_in_cover(shares[i], cover_files[i], out) != 0)
-        {
+        if (hide_share_bit_in_cover(shares[i], cover_files[i], out, 0) != 0) {
             fprintf(stderr, "Fallo ocultando share %d\n", i+1);
             return -1;
         }
         free_bmp257_image(shares[i]);
     }
-
-    free(shares);
     return 0;
 }
 
