@@ -28,7 +28,7 @@
             }
             printf("Distributing secret image: %s\n", arguments->secret);
             test();
-            //shamir_distribute(arguments->k, arguments->secret, arguments->n, coverfiles); // Assuming you will handle the output files later
+            shamir_distribute(arguments->k, arguments->secret, arguments->n, coverfiles);
         }else if ( arguments->recover ){
             printf("Recovering secret image from shares with k=%d\n", arguments->k);
             shamir_recover(arguments->k, "hola.bmp", 8, encodedFiles); // Assuming you will handle the input files later

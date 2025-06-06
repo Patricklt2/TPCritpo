@@ -1,121 +1,108 @@
 
 #include <encryption.h>
 
-/**
- * Oculta un share dentro de una imagen portadora usando el bit menos significativo (LSB).
- * Ambas imágenes deben ser 8-bit grayscale con las mismas dimensiones.
- *
- * @param share       Puntero a BMP257Image con el share (valor 0–256).
- * @param cover_file  Ruta al BMP portador.
- * @param output_file Ruta donde escribir el BMP esteganografiado.
- * @return 0 en éxito, -1 en error.
- */
-static int hide_share_bit_in_cover(const BMP257Image* share, const char* cover_file, const char* output_file, int bit_index){
-    BMP257Image* cover = read_bmp_257(cover_file);
-    if (!cover) {
-        fprintf(stderr, "No puedo leer portada: %s\n", cover_file);
-        return -1;
+#define PRIME 257
+#define MAX_BYTES 300*(300/8)
+
+int shamir_distribute( int k, const char* file_name, int n, const char** cover_files) {
+    // Placeholder for the actual implementation of Shamir's Secret Sharing distribution
+    // This function should distribute the secret image into n shares using k as the threshold
+    printf("Distributing secret image '%s' into %d shares with a threshold of %d\n", file_name, n, k);
+    
+    if ( n < k ) {
+        fprintf(stderr, "Error: n must be greater than or equal to k\n");
+        return 1; // Return error code
     }
 
-    int w = cover->info_header.width;
-    int h = cover->info_header.height;
-    int sw = share->info_header.width;
-    int sh = share->info_header.height;
+    BMP257Image* secret_image = read_bmp_257(file_name);
 
-    if (w != sw || h != sh) {
-        fprintf(stderr, "La portadora y el share deben tener el mismo tamaño.\n");
-        free_bmp257_image(cover);
-        return -1;
+    char shades[k];
+
+    // < 8
+    if( k < 8 ){
+        cover_in_files_less(secret_image, cover_files, k, n);
+    }else if( k == 8 ){
+        cover_in_files(secret_image, cover_files, k, n);
+    }else{
+        cover_in_files_more(secret_image, cover_files, k, n);
     }
 
-    for (int y = 0; y < sh; ++y) {
-        for (int x = 0; x < sw; ++x) {
-            uint8_t share_val = get_mod257_value(share->pixels[y][x]) & 0xFF;
-            uint8_t share_bit = (share_val >> bit_index) & 0x1;
-            uint8_t cover_val = cover->pixels[y][x].value;
-            cover_val = (cover_val & 0xFE) | share_bit;
-            cover->pixels[y][x] = value_to_mod257_pixel(cover_val);
+    // Free the secret image resources
+    free_bmp257_image(secret_image);
+    
+    return 0; // Return 0 on success
+}
+
+void separate_pixels(Mod257Pixel** pixels, int k, Mod257Pixel** pixel_values) {
+    printf("Separating pixels into %d shares\n", k);
+
+    for ( int i=0, int n=0; i < k; i++ ) {
+        
+        memcpy(dest, src + start, num_elements * sizeof());
+    }
+}
+
+void cover_in_files(BMP257Image* secret_image, const char** cover_files, int k, int n) {
+    printf("Distributing into 8 cover files\n");
+    Mod257Pixel** pixel_values = malloc(MAX_BYTES * sizeof(Mod257Pixel*)); // n array of pixel values
+    separate_pixels(secret_image->pixels, k, n, pixel_values);
+    Mod257Pixel* shares = malloc(n * sizeof(Mod257Pixel*));
+    get_shares(pixel_values, k, n, shares); // This should be implemented to get the shares
+    for (int i = 0; i < MAX_BYTES; i++) {
+        BMP257Image* cover_image = read_bmp_257(cover_files[i]);
+        if (!cover_image) {
+            fprintf(stderr, "Error reading cover file '%s'\n", cover_files[i]);
+            break;
         }
+
+        write_with_shares(cover_image, shares[i], i); // Writes the transport images with the asigned shares
+
+        free_bmp257_image(cover_image);
     }
+    free(pixel_values);
+    free(shares);
+}
 
-    cover->file_header.reserved1 = share->file_header.reserved1;
-    cover->file_header.reserved2 = share->file_header.reserved2;
+void separate_pixels(){
+     = malloc(k * sizeof(Mod257Pixel*));
+}
 
-    int res = write_bmp_257(cover, output_file);
-    free_bmp257_image(cover);
-    return res;
+void get_shares(Mod257Pixel** pixel_values, int k, int n, Mod257Pixel* result){
+        
 }
 
 
-// --------------------------------------------------------------------------------------- //
+// [] * n  --> 8 [] [] [] [] [] [] [] [] 8 bytes cada uno 
+// 300x300/8 --> 37.5 x 300
+// 300 x 300 bytes
 
 
-int shamir_distribute(int shades_count, const char* file_name, int images_count, const char** cover_files){
-    if (shades_count <= 0 || images_count <= 0 || shades_count > images_count) return -1;
-
-    uint16_t seed = (unsigned)time(NULL) % UINT16_MAX; 
-
-    // 1) Leemos imagen secreta
-    BMP257Image* original = read_bmp_257(file_name);
-    if (!original) {
-        fprintf(stderr, "Error reading the secret image: %s\n", file_name);
-        return -1;
+int pow(int k, int i){
+    int result = 1;
+    for(int j = 0; j < i; j++){
+        result *= k;
     }
-
-    int w = original->info_header.width;
-    int h = original->info_header.height;
-
-    // 2) Creamos n imágenes vacías para shares
-    BMP257Image** shares = malloc(images_count * sizeof(BMP257Image*)); 
-    for (int i = 0; i < images_count; ++i) {
-        shares[i] = create_bmp_257(NULL, w, h);
-        shares[i]->file_header.reserved1 = seed;  // guardo seed
-        shares[i]->file_header.reserved2 = i + 1; // para identificar el share
-        if (!shares[i]) {
-            fprintf(stderr, "Error in the creation of a share %d\n", i+1);
-            return -1;
-        }
-    }
-
-    // 3) Buffers de coeficientes para cada píxel
-    uint16_t* coeffs = malloc(shades_count * sizeof(uint16_t));
-
-    // 4) Para cada píxel de la original, generar y evaluar polinomio
-    for (int y = 0; y < h; ++y) {
-        for (int x = 0; x < w; ++x) {
-            coeffs[0] = get_mod257_value(original->pixels[y][x]);
-            for (int j = 1; j < shades_count; ++j)
-                coeffs[j] = rand() % 257;
-
-            for (int i = 0; i < images_count; ++i) {
-                if (!shares[i] || !shares[i]->pixels || !shares[i]->pixels[y]) {
-                    fprintf(stderr, "NULL pointer detected: share %d, y %d\n", i, y);
-                    exit(1);
-                }
-                uint16_t xv = i + 1, yv = 0, pow = 1;
-                for (int j = 0; j < shades_count; ++j) {
-                    yv = mod257_add(yv,
-                        mod257_mul(coeffs[j], pow));
-                    pow = mod257_mul(pow, xv);
-                }
-                shares[i]->pixels[y][x] = original->pixels[y][x];
-            }
-        }
-    }
-
-    free(coeffs);
-    free_bmp257_image(original);
-
-    // 5) Ocultamos cada share en su portadora correspondiente
-    for (int i = 0; i < images_count; ++i) {
-        char out[256];
-        snprintf(out, sizeof(out), "stego_share_%d.bmp", i+1);
-        if (hide_share_bit_in_cover(shares[i], cover_files[i], out, 0) != 0) {
-            fprintf(stderr, "Fallo ocultando share %d\n", i+1);
-            return -1;
-        }
-        free_bmp257_image(shares[i]);
-    }
-    return 0;
+    return result;
 }
 
+/*
+    @param pixel_values: Array of Mod257Pixel pointers containing k pixel values
+    @param k: Size of share array
+    @param n: share operating
+    @param result: Mod257Pixel structure to store the result of the evaluation
+*/
+
+void evaluate_shamir(Mod257Pixel* pixel_values, int k, int n, Mod257Pixel result){
+    // f(k) = (pv[0] + pv[1] * n + pv[2] * n^2 + ... + pv[k-1] *n^(k-1)) mod 257
+    // result = f(k);
+
+    uint8_t aux = 0;
+    
+    for(int i = 0; i < k; i++){
+        uint8_t term = (pixel_values[i]->value * pow(n,i))%PRIME;
+        aux += (aux + term)%PRIME;
+    } 
+
+    result->value = aux;
+    result->is_257 = false;
+}
