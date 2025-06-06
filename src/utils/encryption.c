@@ -54,7 +54,6 @@ int shamir_distribute(int shades_count, const char* file_name, int images_count,
     if (shades_count <= 0 || images_count <= 0 || shades_count > images_count) return -1;
 
     uint16_t seed = (unsigned)time(NULL) % UINT16_MAX; 
-    srand(seed);
 
     // 1) Leemos imagen secreta
     BMP257Image* original = read_bmp_257(file_name);
@@ -99,7 +98,7 @@ int shamir_distribute(int shades_count, const char* file_name, int images_count,
                         mod257_mul(coeffs[j], pow));
                     pow = mod257_mul(pow, xv);
                 }
-                shares[i]->pixels[y][x] = value_to_mod257_pixel(yv);
+                shares[i]->pixels[y][x] = original->pixels[y][x];
             }
         }
     }

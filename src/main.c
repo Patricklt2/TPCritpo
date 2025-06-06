@@ -2,6 +2,8 @@
 #include <parser.h>
 #include <encryption.h>
 #include <decryption.h>
+#include <new_encryption.h>
+
 
  int main(int argc, char *argv[]) {
     Args *arguments = malloc(sizeof(Args));
@@ -25,7 +27,8 @@
                 goto free;
             }
             printf("Distributing secret image: %s\n", arguments->secret);
-            shamir_distribute(arguments->k, arguments->secret, arguments->n, coverfiles); // Assuming you will handle the output files later
+            test();
+            //shamir_distribute(arguments->k, arguments->secret, arguments->n, coverfiles); // Assuming you will handle the output files later
         }else if ( arguments->recover ){
             printf("Recovering secret image from shares with k=%d\n", arguments->k);
             shamir_recover(arguments->k, "hola.bmp", 8, encodedFiles); // Assuming you will handle the input files later
