@@ -9,5 +9,6 @@
 
 void lagrangeTests();
 void inverseModTests();
-
+void test_scramble_unscramble();
+void test_flatten_unflatten(); 
 #endif

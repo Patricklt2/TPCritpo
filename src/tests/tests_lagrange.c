@@ -122,3 +122,57 @@ void test_scramble_unscramble() {
     free(original);
     free(backup);
 }
+
+void test_flatten_unflatten() {
+    int height = 3, width = 4;
+
+    // Allocate original matrix
+    Mod257Pixel** original = malloc(height * sizeof(Mod257Pixel*));
+    for (int i = 0; i < height; i++)
+        original[i] = malloc(width * sizeof(Mod257Pixel));
+
+    // Fill with test values
+    for (int i = 0; i < height; i++)
+        for (int j = 0; j < width; j++) {
+            original[i][j].value = i * width + j;
+            original[i][j].is_257 = (original[i][j].value == 0) ? 1 : 0;
+        }
+
+    // Flatten
+    Mod257Pixel* flat = malloc(height * width * sizeof(Mod257Pixel));
+    flatten_matrix(original, height, width, flat);
+
+    // Allocate matrix to unflatten into
+    Mod257Pixel** result = malloc(height * sizeof(Mod257Pixel*));
+    for (int i = 0; i < height; i++)
+        result[i] = malloc(width * sizeof(Mod257Pixel));
+
+    // Unflatten
+    unflatten_matrix(flat, height, width, result);
+
+    // Verify
+    int success = 1;
+    for (int i = 0; i < height; i++)
+        for (int j = 0; j < width; j++)
+            if (original[i][j].value != result[i][j].value || original[i][j].is_257 != result[i][j].is_257) {
+                success = 0;
+                printf("Mismatch at (%d, %d): original=(%d, %d), result=(%d, %d)\n",
+                       i, j,
+                       original[i][j].value, original[i][j].is_257,
+                       result[i][j].value, result[i][j].is_257);
+            }
+
+    if (success)
+        printf("✅ Flatten/unflatten test passed!\n");
+    else
+        printf("❌ Flatten/unflatten test failed.\n");
+
+    // Cleanup
+    for (int i = 0; i < height; i++) {
+        free(original[i]);
+        free(result[i]);
+    }
+    free(original);
+    free(result);
+    free(flat);
+}

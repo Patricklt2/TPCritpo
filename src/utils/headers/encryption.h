@@ -14,5 +14,4 @@
  */
 
 int shamir_distribute( int shades_count, const char* file_name,  int images_count, const char** cover_files);
-void test_scramble_unscramble();
 #endif

@@ -12,6 +12,7 @@ int main() {
     fileManagerTests();
 
     test_scramble_unscramble();
+    test_flatten_unflatten();
     printf("All tests completed successfully!\n");
     return 0;
 }
