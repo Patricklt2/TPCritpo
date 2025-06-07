@@ -67,8 +67,12 @@ void separate_pixels(){
      = malloc(k * sizeof(Mod257Pixel*));
 }
 
-void get_shares(Mod257Pixel** pixel_values, int k, int n, Mod257Pixel* result){
-        
+// pixel values --> array aplanado de pixeles
+// genera las n shares
+void get_shares(Mod257Pixel* pixel_values, int k, int n, Mod257Pixel* result){
+        for(int i = 1; i <= n; i++){
+            evaluate_shamir(pixel_values, k, i, &result[i-1]);
+        }
 }
 
 
@@ -77,10 +81,10 @@ void get_shares(Mod257Pixel** pixel_values, int k, int n, Mod257Pixel* result){
 // 300 x 300 bytes
 
 
-int pow(int k, int i){
+int pow_mod(int base, int exp, int mod) {
     int result = 1;
-    for(int j = 0; j < i; j++){
-        result *= k;
+    for(int i = 0; i < exp; i++) {
+        result = (result * base) % mod;
     }
     return result;
 }
@@ -92,17 +96,17 @@ int pow(int k, int i){
     @param result: Mod257Pixel structure to store the result of the evaluation
 */
 
-void evaluate_shamir(Mod257Pixel* pixel_values, int k, int n, Mod257Pixel result){
+void evaluate_shamir(Mod257Pixel* pixel_values, int k, int x, Mod257Pixel result){
     // f(k) = (pv[0] + pv[1] * n + pv[2] * n^2 + ... + pv[k-1] *n^(k-1)) mod 257
     // result = f(k);
 
-    uint8_t aux = 0;
+    uint16_t aux = 0;
     
     for(int i = 0; i < k; i++){
-        uint8_t term = (pixel_values[i]->value * pow(n,i))%PRIME;
-        aux += (aux + term)%PRIME;
+        uint16_t term = (pixel_values[i].value * pow_mod(x,i,PRIME))%PRIME;
+        aux = (aux + term)%PRIME;
     } 
 
-    result->value = aux;
-    result->is_257 = false;
+    result->value = (aux == 256) ? 0 : (uint8_t)aux;
+    result->is_257 = (aux == 256) ? 1 : 0;
 }
