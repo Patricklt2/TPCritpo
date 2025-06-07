@@ -14,6 +14,7 @@ int main() {
     test_scramble_unscramble();
     test_flatten_unflatten();
     test_lagrange_recovery();
+    test_process_unprocess();
     printf("All tests completed successfully!\n");
     return 0;
 }

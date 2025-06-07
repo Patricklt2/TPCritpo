@@ -5,8 +5,8 @@
 #define MAX_BYTES 300*(300/8)
 
 // ------------------ Private Declarations ------------------
-void scramble_flattened_image(Mod257Pixel* image, int size);
-void unscramble_flattened_image(Mod257Pixel* image, int size); 
+void scramble_flattened_image(Mod257Pixel* image, int size, int64_t seed);
+void unscramble_flattened_image(Mod257Pixel* image, int size, int64_t seed); 
 void get_shares(Mod257Pixel* pixel_values, int k, int n, Mod257Pixel* result);
 int pow_mod(int base, int exp, int mod);
 void evaluate_shamir(Mod257Pixel* pixel_values, int k, int x, Mod257Pixel* result);
@@ -14,6 +14,7 @@ void process_image(BMP257Image * image, Mod257Pixel** pixels, int k, int n);
 void unflatten_matrix(Mod257Pixel* flat, int height, int width, Mod257Pixel** matrix); 
 void flatten_matrix(Mod257Pixel** matrix, int height, int width, Mod257Pixel* flat); 
 void recover_polynomial(int* x_coords, Mod257Pixel* shares, int k, Mod257Pixel* coefficients); 
+void unprocess_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, int n);
 // ---------------------------------------------------------
 
 int shamir_distribute( int k, const char* file_name, int n, const char** cover_files) {
@@ -75,7 +76,8 @@ void cover_in_files(BMP257Image* secret_image, const char** cover_files, int k, 
 
 
 //image to scramble
-void scramble_flattened_image(Mod257Pixel* image, int size) {
+void scramble_flattened_image(Mod257Pixel* image, int size, int64_t seed) {
+    setSeed(seed);
     for (int i = size - 1; i > 0; i--) {
         int j = nextChar() % (i + 1);
 
@@ -86,7 +88,8 @@ void scramble_flattened_image(Mod257Pixel* image, int size) {
 }
 
 // Unscramble image
-void unscramble_flattened_image(Mod257Pixel* image, int size) {
+void unscramble_flattened_image(Mod257Pixel* image, int size, int64_t seed) {
+    setSeed(seed);
     // Store original permutation
     int* indices = malloc(size * sizeof(int));
     for (int i = 0; i < size; i++) {
@@ -122,8 +125,6 @@ void get_shares(Mod257Pixel* pixel_values, int k, int n, Mod257Pixel* result){
         evaluate_shamir(pixel_values, k, i, &result[i-1]);
     }
 }
-
-
 
 int pow_mod(int base, int exp, int mod) {
     int result = 1;
@@ -170,7 +171,7 @@ void process_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, in
     if (!flattened_pixels) return;
 
     flatten_matrix(image->pixels, height, width, flattened_pixels);
-    scramble_flattened_image(flattened_pixels, total_pixels);
+    scramble_flattened_image(flattened_pixels, total_pixels, 1000);
 
     //Agarro de a tandas de k pixeles
     for (int i = 0, j = 0; i < total_pixels; i += k, j++) {
@@ -193,6 +194,47 @@ void process_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, in
 
         free(aux);
     }
+
+    free(flattened_pixels);
+}
+
+void unprocess_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, int n) {
+    int height = image->info_header.height;
+    int width = image->info_header.width;
+    int total_pixels = height * width;
+    int num_blocks = (total_pixels + k - 1) / k;  // Ceiling division
+
+    // Allocate flattened array for reconstructed pixels
+    Mod257Pixel *flattened_pixels = malloc(sizeof(Mod257Pixel) * total_pixels);
+    if (!flattened_pixels) return;
+
+    // Standard x-coordinates for shares (1..n)
+    int x_coords[n];
+    for (int i = 0; i < n; i++) {
+        x_coords[i] = i + 1;  // Shares are typically at x=1, x=2, ..., x=n
+    }
+
+    // For each block of k pixels
+    for (int i = 0, block_idx = 0; i < total_pixels && block_idx < num_blocks; i += k, block_idx++) {
+        // Get the shares for this block
+        Mod257Pixel *shares = processed_pixels[block_idx];
+        
+        // Reconstruct the polynomial coefficients (which are our original pixel values)
+        Mod257Pixel coefficients[k];
+        recover_polynomial(x_coords, shares, k, coefficients);
+        
+        // The first k coefficients are our original pixel values
+        int copy_len = (total_pixels - i) < k ? (total_pixels - i) : k;
+        for (int w = 0; w < copy_len; w++) {
+            flattened_pixels[i + w] = coefficients[w];
+        }
+    }
+
+    // Undo the scrambling
+    unscramble_flattened_image(flattened_pixels, total_pixels, 1000);
+
+    // Unflatten back into the image matrix
+    unflatten_matrix(flattened_pixels, height, width, image->pixels);
 
     free(flattened_pixels);
 }

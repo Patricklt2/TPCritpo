@@ -95,13 +95,9 @@ void test_scramble_unscramble() {
 
     int64_t test_seed = 987654321;
 
-    // Scramble
-    setSeed(test_seed);
-    scramble_flattened_image(original, size);
+    scramble_flattened_image(original, size, test_seed);
 
-    // Unscramble
-    setSeed(test_seed);  // reset seed!
-    unscramble_flattened_image(original, size);
+    unscramble_flattened_image(original, size, test_seed);
 
     // Compare
     int match = 1;
@@ -229,4 +225,73 @@ void test_lagrange_recovery() {
         print_coeffs("Recovered", recovered, k);
         printf(compare_polys(coeffs, recovered, k) ? "✅ Success\n\n" : "❌ Failure\n\n");
     }
+}
+
+void test_process_unprocess() {
+    // Read input image
+    BMP257Image *img = read_bmp_257("assets/Alfredssd.bmp");
+    if (!img) {
+        fprintf(stderr, "Failed to read image\n");
+        return;
+    }
+
+    int height = img->info_header.height;
+    int width = img->info_header.width;
+    int total_pixels = height * width;
+    int k = 8;  // Pixels per block
+    int n = 10; // Number of shares
+    int num_blocks = (total_pixels + k - 1) / k; // Ceiling division
+
+    // Allocate processed pixels array
+    Mod257Pixel **processed_pixels = malloc(num_blocks * sizeof(Mod257Pixel*));
+    if (!processed_pixels) {
+        free_bmp257_image(img);
+        return;
+    }
+
+    // Process image (creates shares)
+    process_image(img, processed_pixels, k, n);
+
+    // Make a copy of original pixels for comparison
+    Mod257Pixel **original_pixels = malloc(height * sizeof(Mod257Pixel*));
+    for (int i = 0; i < height; i++) {
+        original_pixels[i] = malloc(width * sizeof(Mod257Pixel));
+        memcpy(original_pixels[i], img->pixels[i], width * sizeof(Mod257Pixel));
+    }
+
+    // Unprocess image (should reconstruct original)
+    unprocess_image(img, processed_pixels, k, n);
+
+    // Verify reconstruction
+    int errors = 0;
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            if (img->pixels[i][j].value != original_pixels[i][j].value ||
+                img->pixels[i][j].is_257 != original_pixels[i][j].is_257) {
+                errors++;
+            }
+        }
+    }
+
+    if (errors == 0) {
+        printf("Success: Image perfectly reconstructed\n");
+    } else {
+        printf("Warning: %d pixel mismatches found\n", errors);
+    }
+
+    // Write output
+    write_bmp_257(img, "encodings/hola.bmp");
+
+    // Cleanup
+    for (int i = 0; i < height; i++) {
+        free(original_pixels[i]);
+    }
+    free(original_pixels);
+    
+    for (int i = 0; i < num_blocks; i++) {
+        free(processed_pixels[i]);
+    }
+    free(processed_pixels);
+    
+    free_bmp257_image(img);
 }
