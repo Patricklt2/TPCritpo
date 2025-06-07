@@ -129,6 +129,19 @@ int pow_mod(int base, int exp, int mod) {
 
 // pixel values --> array aplanado de pixeles
 // genera las n shares
+/**
+ * Generates n shares from k original Mod257Pixel values using Shamir's Secret Sharing
+ * over a finite field (mod 257). The function ensures that none of the generated shares
+ * are equal to 256 (the special reserved value used as a 257th symbol).
+ *
+ * @param pixel_values An array of k Mod257Pixel values representing the original data (e.g., pixels).
+ *                     These values form the coefficients of a secret polynomial.
+ * @param k The threshold number of shares required to reconstruct the original data.
+ *          Also the number of coefficients in the secret polynomial.
+ * @param n The total number of shares to generate.
+ * @param result An output array of n Mod257Pixel structures to store the resulting shares.
+ *               Each share corresponds to a point on the polynomial (x = 1 to n).
+ */
 void get_shares(Mod257Pixel* pixel_values, int k, int n, Mod257Pixel* result) {
     for (int i = 1; i <= n; i++) {
         while (1) {
@@ -167,7 +180,7 @@ void get_shares(Mod257Pixel* pixel_values, int k, int n, Mod257Pixel* result) {
     @param pixel_values: Array of Mod257Pixel pointers containing k pixel values
     @param k: Size of share array
     @param n: share operating
-    @param result: Mod257Pixel structure to store the result of the evaluation
+    @return value of evaluation
 */
 uint16_t evaluate_shamir(Mod257Pixel* pixel_values, int k, int x) {
     uint16_t aux = 0;
@@ -187,6 +200,19 @@ uint16_t evaluate_shamir(Mod257Pixel* pixel_values, int k, int x) {
 //  ...
 // [11250][B0 B1 B2 B3 B4 .. Bn]
 // ------------------------------------------ 
+/**
+ * Processes the pixels of a BMP257Image using a (k, n) secret sharing scheme.
+ * The original pixels are flattened, scrambled, split into blocks of size k,
+ * and shared into n shares using polynomial-based secret sharing.
+ *
+ * @param image The BMP257Image to process. Contains the original image data.
+ * @param processed_pixels A pre-allocated array of Mod257Pixel pointers.
+ *                         Each pointer will point to an array of n Mod257Pixels
+ *                         representing the shares of a block of k pixels.
+ * @param k The number of original pixels in each block. Also, the threshold
+ *          number of shares required to reconstruct the block.
+ * @param n The total number of shares to generate per block.
+ */
 void process_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, int n) {
     int height = image->info_header.height;
     int width = image->info_header.width;
@@ -223,6 +249,19 @@ void process_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, in
     free(flattened_pixels);
 }
 
+/**
+ * Reconstructs the original image from processed pixels using
+ * (k, n) secret sharing recovery. The shares are used to recover
+ * the original pixels, which are then unscrambled and reshaped into
+ * the original 2D image format.
+ *
+ * @param image The BMP257Image structure to store the reconstructed image.
+ *              The `pixels` field will be overwritten with recovered data.
+ * @param processed_pixels An array of Mod257Pixel pointers. Each pointer
+ *                         holds n shares corresponding to a block of k pixels.
+ * @param k The number of pixels originally shared together (threshold).
+ * @param n The number of shares available per block (total number of shares).
+ */
 void unprocess_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, int n) {
     int height = image->info_header.height;
     int width = image->info_header.width;
@@ -294,6 +333,19 @@ int modinv(int a, int mod) {
     return res;
 }
 
+/**
+ * Recovers the original polynomial coefficients (pixel values) from a set of shares
+ * using Lagrange interpolation over a finite field (mod 257).
+ *
+ * @param x_coords An array of integers representing the x-coordinates of the shares.
+ *                 These should be distinct and typically start from 1 to n.
+ * @param shares An array of Mod257Pixel structures representing the y-values
+ *               (shares) at the corresponding x-coordinates.
+ * @param k The number of shares used to reconstruct the original polynomial.
+ *          This is also the number of coefficients to recover.
+ * @param coefficients An output array of Mod257Pixel structures where the reconstructed
+ *                     polynomial coefficients (i.e., original pixel values) will be stored.
+ */
 void recover_polynomial(int* x_coords, Mod257Pixel* shares, int k, Mod257Pixel* coefficients) {
     int field_coeffs[MAX_K] = {0};
 
