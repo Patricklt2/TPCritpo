@@ -4,20 +4,6 @@
 #define PRIME 257
 #define MAX_BYTES 300*(300/8)
 
-// ------------------ Private Declarations ------------------
-void scramble_flattened_image(Mod257Pixel* image, int size, int64_t seed);
-void unscramble_flattened_image(Mod257Pixel* image, int size, int64_t seed); 
-void get_shares(Mod257Pixel* pixel_values, int k, int n, Mod257Pixel* result);
-int pow_mod(int base, int exp, int mod);
-uint16_t evaluate_shamir(Mod257Pixel* pixel_values, int k, int x);
-void process_image(BMP257Image * image, Mod257Pixel** pixels, int k, int n);
-void unflatten_matrix(Mod257Pixel* flat, int height, int width, Mod257Pixel** matrix); 
-void flatten_matrix(Mod257Pixel** matrix, int height, int width, Mod257Pixel* flat); 
-void recover_polynomial(int* x_coords, Mod257Pixel* shares, int k, Mod257Pixel* coefficients); 
-void unprocess_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, int n);
-void scramble_flattened_image_xor(Mod257Pixel* image, int size, int64_t seed);
-// ---------------------------------------------------------
-
 int shamir_distribute( int k, const char* file_name, int n, const char** cover_files) {
     // Placeholder for the actual implementation of Shamir's Secret Sharing distribution
     // This function should distribute the secret image into n shares using k as the threshold

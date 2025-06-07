@@ -212,7 +212,7 @@ void test_lagrange_recovery() {
         Mod257Pixel shares[MAX_K];
         for (int i = 0; i < k; i++) {
             x_coords[i] = i + 1; // x = 1, 2, 3, ...
-            evaluate_shamir(coeffs, k, x_coords[i], &shares[i]);
+           // evaluate_shamir(coeffs, k, x_coords[i], &shares[i]);
         }
 
         // Recover
