@@ -33,32 +33,59 @@ int shamir_distribute( int k, const char* file_name, int n, const char** cover_f
     return 0; // Return 0 on success
 }
 
-void separate_pixels(Mod257Pixel** pixels, int k, Mod257Pixel** pixel_values) {
-    printf("Separating pixels into %d shares\n", k);
-
-    for ( int i=0, n=0; i < k; i++ ) {
-        
-        //memcpy(dest, src + start, num_elements * sizeof());
+void write_with_shares( Mod257Pixel* plane_pixels, Mod257Pixel pixel_values[], int share_index, int pixel_index) {
+    
+    for(int i = 0; i < 8; i++) {
+        // Clear the LSB of the pixel and set it to the i-th bit of pixel_values[share_index].value
+        plane_pixels[pixel_index + i].value = (plane_pixels[pixel_index + i].value & 0xFE) | ((pixel_values[share_index].value >> 8-i-1) & 1);
     }
+    
 }
 
 void cover_in_files(BMP257Image* secret_image, const char** cover_files, int k, int n) {
     printf("Distributing into 8 cover files\n");
-    //TODO change to Height*width /k
-    Mod257Pixel** processed_pixels = malloc(MAX_BYTES * sizeof(Mod257Pixel*)); // n array of pixel values
+    long max_bytes = secret_image->info_header.with * secret_image->info_header.height;
+    
+    Mod257Pixel** processed_pixels = malloc(max_bytes * sizeof(Mod257Pixel*)); // n array of pixel values
     process_image(secret_image, processed_pixels, k, n);
+     
+    for ( int j = 0; j < max_bytes; j+=k ) {
+        for( int i = 0; i < n; i++ ) {
+            uint16_t seed = 1000; // Unique seed
+            BMP257Image* cover_image = read_bmp_257(cover_files[i]);
+            if (!cover_image) {
+                fprintf(stderr, "Error reading cover file '%s'\n", cover_files[i]);
+                break;
+            }
+            sercret_image->file_header.reserved1 = i + 1; // Assigning the share index to reserved1
+            secret_image->file_header.reserved2 = seed; // Assigning the seed to reserved2
 
-    for (int i = 0; i < MAX_BYTES; i++) {
-        BMP257Image* cover_image = read_bmp_257(cover_files[i]);
-        if (!cover_image) {
-            fprintf(stderr, "Error reading cover file '%s'\n", cover_files[i]);
-            break;
+            Mod257Pixel* plane_pixels = malloc(sizeof(Mod257Pixel) * cover_image->info_header.width * cover_image->info_header.height);
+            if (!plane_pixels) {
+                fprintf(stderr, "Memory allocation failed for plane pixels\n");
+                free_bmp257_image(cover_image);
+                break;
+            }
+            flatten_matrix(cover_image->pixels, cover_image->info_header.height, cover_image->info_header.width, plane_pixels);
+
+            write_with_shares(plane_pixels, processed_pixels[j], i, j); // Writes the transport images with the asigned shares
+
+            unflatten_matrix(plane_pixels, cover_image->info_header.height, cover_image->info_header.width, cover_image->pixels);
+            // Save the modified cover image
+            char output_filename[256];
+            snprintf(output_filename, sizeof(output_filename), "encodings/share%d.bmp", i + 1);
+            write_bmp_257(cover_files[i], output_filename);
+            free(plane_pixels);
+            free_bmp257_image(cover_image);
         }
-
-//        write_with_shares(cover_image, shares[i], i); // Writes the transport images with the asigned shares
-
-        free_bmp257_image(cover_image);
     }
+
+    // Free the processed pixels
+    for (int i = 0; i < max_bytes; i++) {
+        free(processed_pixels[i]);
+    }
+    free(processed_pixels);
+
 }
 
 
