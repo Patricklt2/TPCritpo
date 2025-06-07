@@ -6,6 +6,7 @@
 #include <lagrange.h>
 #include <assert.h>
 #include <encryption.h>
+#include <decryption.h>
 
 void lagrangeTests();
 void inverseModTests();
