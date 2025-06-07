@@ -2,7 +2,7 @@
 #include <parser.h>
 #include <encryption.h>
 #include <decryption.h>
-#include <new_encryption.h>
+
 
 
  int main(int argc, char *argv[]) {
@@ -27,7 +27,6 @@
                 goto free;
             }
             printf("Distributing secret image: %s\n", arguments->secret);
-            test();
             shamir_distribute(arguments->k, arguments->secret, arguments->n, coverfiles);
         }else if ( arguments->recover ){
             printf("Recovering secret image from shares with k=%d\n", arguments->k);

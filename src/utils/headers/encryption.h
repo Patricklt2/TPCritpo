@@ -1,9 +1,9 @@
 #ifndef ENCRYPTION_H
 #define ENCRYPTION_H
 
-#include "file_manager.h"
+#include <file_manager.h>
 #include <time.h>
-#include "Permutation_Table.h"
+#include <Permutation_Table.h>
 /**
  * Distributes a secret image into multiple shares using Shamir's Secret Sharing
  * @param shades_count Number of shares to create (k)
@@ -14,5 +14,5 @@
  */
 
 int shamir_distribute( int shades_count, const char* file_name,  int images_count, const char** cover_files);
-
+void test_scramble_unscramble();
 #endif

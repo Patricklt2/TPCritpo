@@ -80,3 +80,45 @@ void inverseModTests() {
 
     printf("OK!\nAll inverse modulo tests passed!\n");
 }
+
+void test_scramble_unscramble() {
+    const int size = 100;
+    Mod257Pixel* original = malloc(size * sizeof(Mod257Pixel));
+    Mod257Pixel* backup = malloc(size * sizeof(Mod257Pixel));
+
+    // Fill original image with values 0 to 99
+    for (int i = 0; i < size; i++) {
+        original[i].value = i % 256;
+        original[i].is_257 = 0;
+        backup[i] = original[i];  // copy
+    }
+
+    int64_t test_seed = 987654321;
+
+    // Scramble
+    setSeed(test_seed);
+    scramble_flattened_image(original, size);
+
+    // Unscramble
+    setSeed(test_seed);  // reset seed!
+    unscramble_flattened_image(original, size);
+
+    // Compare
+    int match = 1;
+    for (int i = 0; i < size; i++) {
+        if (original[i].value != backup[i].value || original[i].is_257 != backup[i].is_257) {
+            printf("Mismatch at index %d: got %d, expected %d\n",
+                   i, original[i].value, backup[i].value);
+            match = 0;
+            break;
+        }
+    }
+
+    if (match)
+        printf("✅ Scramble/unscramble test passed!\n");
+    else
+        printf("❌ Scramble/unscramble test failed.\n");
+
+    free(original);
+    free(backup);
+}

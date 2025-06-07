@@ -11,6 +11,7 @@ int main() {
     printf("Running File Manager Tests...\n");
     fileManagerTests();
 
+    test_scramble_unscramble();
     printf("All tests completed successfully!\n");
     return 0;
 }
