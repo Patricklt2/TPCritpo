@@ -229,7 +229,7 @@ void test_lagrange_recovery() {
 
 void test_process_unprocess() {
     // Read input image
-    BMP257Image *img = read_bmp_257("assets/Marilynssd.bmp");
+    BMP257Image *img = read_bmp_257("assets/Gustavossd.bmp");
     if (!img) {
         fprintf(stderr, "Failed to read image\n");
         return;
@@ -238,7 +238,7 @@ void test_process_unprocess() {
     int height = img->info_header.height;
     int width = img->info_header.width;
     int total_pixels = height * width;
-    int k = 3;  // Pixels per block
+    int k = 6;  // Pixels per block
     int n = 8; // Number of shares
     int num_blocks = (total_pixels + k - 1) / k; // Ceiling division
 

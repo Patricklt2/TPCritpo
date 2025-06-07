@@ -15,6 +15,7 @@ void unflatten_matrix(Mod257Pixel* flat, int height, int width, Mod257Pixel** ma
 void flatten_matrix(Mod257Pixel** matrix, int height, int width, Mod257Pixel* flat); 
 void recover_polynomial(int* x_coords, Mod257Pixel* shares, int k, Mod257Pixel* coefficients); 
 void unprocess_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, int n);
+void scramble_flattened_image_xor(Mod257Pixel* image, int size, int64_t seed);
 // ---------------------------------------------------------
 
 int shamir_distribute( int k, const char* file_name, int n, const char** cover_files) {
@@ -75,7 +76,19 @@ void cover_in_files(BMP257Image* secret_image, const char** cover_files, int k, 
 }
 
 
-//image to scramble
+void scramble_flattened_image_xor(Mod257Pixel* image, int size, int64_t seed) {
+    setSeed(seed);
+    for (int i = 0; i < size; i++) {
+        uint8_t randByte = nextChar();
+        if (image[i].value == 256) {
+            continue;
+        }
+        image[i].value  = image[i].value  ^ randByte;
+    }
+}
+
+
+//Fisher Yates Style scramble
 void scramble_flattened_image(Mod257Pixel* image, int size, int64_t seed) {
     setSeed(seed);
     for (int i = size - 1; i > 0; i--) {
@@ -87,7 +100,7 @@ void scramble_flattened_image(Mod257Pixel* image, int size, int64_t seed) {
     }
 }
 
-// Unscramble image
+//Fisher Yates Style unscramble
 void unscramble_flattened_image(Mod257Pixel* image, int size, int64_t seed) {
     setSeed(seed);
     // Store original permutation
@@ -197,7 +210,7 @@ void process_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, in
     if (!flattened_pixels) return;
 
     flatten_matrix(image->pixels, height, width, flattened_pixels);
-    scramble_flattened_image(flattened_pixels, total_pixels, 1000);
+    scramble_flattened_image_xor(flattened_pixels, total_pixels, 1000);
 
     //Agarro de a tandas de k pixeles
     for (int i = 0, j = 0; i < total_pixels; i += k, j++) {
@@ -257,7 +270,7 @@ void unprocess_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, 
     }
 
     // Undo the scrambling
-    unscramble_flattened_image(flattened_pixels, total_pixels, 1000);
+    scramble_flattened_image_xor(flattened_pixels, total_pixels, 1000);
 
     // Unflatten back into the image matrix
     unflatten_matrix(flattened_pixels, height, width, image->pixels);
