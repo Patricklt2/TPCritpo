@@ -296,5 +296,60 @@ void test_process_unprocess() {
 }
 
 void test_write_read_LSB(){
+        // Simulated 8-pixel block to embed the data
+    Mod257Pixel plane_pixels[8];
+
+    // Initialize pixels with known values (e.g., all 0xAA = 10101010)
+    for (int i = 0; i < 8; i++) {
+        plane_pixels[i].value = 0xAA;
+        plane_pixels[i].is_257 = 0;
+    }
+
+    // Test value to embed (e.g., 0b11001010 = 0xCA)
+    Mod257Pixel original_share = {.value = 0xCA, .is_257 = 0};
+    Mod257Pixel shares[1];
+    shares[0] = original_share;
+
+    // Write to plane_pixels
+    write_with_shares(plane_pixels, shares, 0, 0);
+
+    // Read back from plane_pixels
+    Mod257Pixel read_shares[1] = {{0}};
+    read_from_shares(plane_pixels, read_shares, 0, 0);
+
+    // Check if read value matches the original
+    assert(read_shares[0].value == original_share.value);
+    printf("✅ test_write_read_share passed: 0x%02X == 0x%02X\n",
+           read_shares[0].value, original_share.value);
+}
+
+void test_cover_and_recover() {
+    const int k = 8;
+    const int n = 8;
     
+    const char* cover_files[] = {"assets/Alfredssd.bmp","assets/Albertssd.bmp","assets/Audreyssd.bmp","assets/Evassd.bmp","assets/Facundo.bmp","assets/Gustavossd.bmp","assets/Jamesssd.bmp","assets/Marilynssd.bmp"};
+
+    BMP257Image* original_secret = read_bmp_257("assets/Albertssd.bmp");
+
+    // Cover the secret into images
+    cover_in_files(original_secret, cover_files, k, n);
+
+    // Recover from any k of the shares (you could shuffle/select any k)
+    const char* subset[8] = {
+        "encodings/share1.bmp",
+        "encodings/share2.bmp",
+        "encodings/share3.bmp",
+        "encodings/share4.bmp",
+        "encodings/share5.bmp",
+        "encodings/share6.bmp",
+        "encodings/share7.bmp",
+        "encodings/share8.bmp"
+    };
+    recover_from_files(k, 8, subset, "encodings/hola2.bmp");
+
+    BMP257Image* recovered_secret = read_bmp_257("encodings/hola2.bmp");
+
+
+    free_bmp257_image(original_secret);
+    free_bmp257_image(recovered_secret);
 }

@@ -15,6 +15,8 @@ int main() {
     test_flatten_unflatten();
     //test_lagrange_recovery();
     test_process_unprocess();
+    test_write_read_LSB();
+    test_cover_and_recover();
     printf("All tests completed successfully!\n");
     return 0;
 }

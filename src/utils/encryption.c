@@ -35,7 +35,7 @@ void write_with_shares( Mod257Pixel* plane_pixels, Mod257Pixel pixel_values[], i
     
     for(int i = 0; i < 8; i++) {
         // Clear the LSB of the pixel and set it to the i-th bit of pixel_values[share_index].value
-        plane_pixels[pixel_index + i].value = (plane_pixels[pixel_index + i].value & 0xFE) | ((pixel_values[share_index].value >> (8-i-1)) & 1);
+        plane_pixels[pixel_index + i].value = (plane_pixels[pixel_index + i].value & 0xFE) | ((pixel_values[share_index].value >> (7-i)) & 1);
     }
     
 }
@@ -46,36 +46,36 @@ void cover_in_files(BMP257Image* secret_image, const char** cover_files, int k, 
     
     Mod257Pixel** processed_pixels = malloc(max_bytes * sizeof(Mod257Pixel*)); // n array of pixel values
     process_image(secret_image, processed_pixels, k, n);
-     
-    for ( int j = 0; j < max_bytes; j+=k ) {
-        for( int i = 0; i < n; i++ ) {
-            uint16_t seed = 1000; // Unique seed
-            BMP257Image* cover_image = read_bmp_257(cover_files[i]);
-            if (!cover_image) {
-                fprintf(stderr, "Error reading cover file '%s'\n", cover_files[i]);
-                break;
-            }
-            secret_image->file_header.reserved1 = i + 1; // Assigning the share index to reserved1
-            secret_image->file_header.reserved2 = seed; // Assigning the seed to reserved2
+    uint16_t seed = 1000; // Unique seed
 
-            Mod257Pixel* plane_pixels = malloc(sizeof(Mod257Pixel) * cover_image->info_header.width * cover_image->info_header.height);
-            if (!plane_pixels) {
-                fprintf(stderr, "Memory allocation failed for plane pixels\n");
-                free_bmp257_image(cover_image);
-                break;
-            }
-            flatten_matrix(cover_image->pixels, cover_image->info_header.height, cover_image->info_header.width, plane_pixels);
-
-            write_with_shares(plane_pixels, processed_pixels[j], i, j); // Writes the transport images with the asigned shares
-
-            unflatten_matrix(plane_pixels, cover_image->info_header.height, cover_image->info_header.width, cover_image->pixels);
-            // Save the modified cover image
-            char output_filename[256];
-            snprintf(output_filename, sizeof(output_filename), "encodings/share%d.bmp", i + 1);
-            write_bmp_257(cover_image, output_filename);
-            free(plane_pixels);
-            free_bmp257_image(cover_image);
+    for( int i = 0; i < n; i++ ) {
+        BMP257Image* cover_image = read_bmp_257(cover_files[i]);
+        if (!cover_image) {
+            fprintf(stderr, "Error reading cover file '%s'\n", cover_files[i]);
+            break;
         }
+        secret_image->file_header.reserved1 = i + 1; // Assigning the share index to reserved1
+        secret_image->file_header.reserved2 = seed; // Assigning the seed to reserved2
+
+        Mod257Pixel* plane_pixels = malloc(sizeof(Mod257Pixel) * cover_image->info_header.width * cover_image->info_header.height);
+        if (!plane_pixels) {
+            fprintf(stderr, "Memory allocation failed for plane pixels\n");
+            free_bmp257_image(cover_image);
+            break;
+        }
+        flatten_matrix(cover_image->pixels, cover_image->info_header.height, cover_image->info_header.width, plane_pixels);
+        for ( int j = 0, a=0; j < max_bytes-1; j+=k,a++ ){
+            printf("in loop: %d %d\n", j, i);
+            write_with_shares(plane_pixels, processed_pixels[a], i, j); // Writes the transport images with the asigned shares
+            printf("end loop: %d %d\n", j, i);
+        }
+
+        unflatten_matrix(plane_pixels, cover_image->info_header.height, cover_image->info_header.width, cover_image->pixels);
+        free(plane_pixels);
+        char output_filename[256];
+        snprintf(output_filename, sizeof(output_filename), "encodings/share%d.bmp", i + 1);
+        write_bmp_257(cover_image, output_filename);
+        free_bmp257_image(cover_image);
     }
 
     // Free the processed pixels
@@ -224,6 +224,7 @@ uint16_t evaluate_shamir(Mod257Pixel* pixel_values, int k, int x) {
 // [0][B0 B1 B2 B3 B4 B5 .. Bn]
 //  ...
 // [11250][B0 B1 B2 B3 B4 .. Bn]
+// [11250] --> [90000] () LSB byte del carrier
 // ------------------------------------------ 
 /**
  * Processes the pixels of a BMP257Image using a (k, n) secret sharing scheme.

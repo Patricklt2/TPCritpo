@@ -10,7 +10,7 @@ void read_from_shares( Mod257Pixel* plane_pixels, Mod257Pixel pixel_values[], in
     char read_value = 0;
     for(int i = 0; i < 8; i++) {
         // Read the LSB of the pixel and set it to the i-th bit of read_value
-        read_value |= ((plane_pixels[pixel_index + i].value & 0x01) << (8-i-1));
+        read_value |= ((plane_pixels[pixel_index + i].value & 0x01) << (7-i));
     }
     pixel_values[share_index].value = read_value;
     
@@ -24,27 +24,30 @@ void recover_from_files(int k, int n, const char** cover_files, char* output_fil
     uint32_t max_bytes = 300*(300/k);
     uint16_t seed = 0;
 
-    Mod257Pixel* recovered_pixels[n];
-
-    for( int j=0; j < max_bytes; j+=k ){
-        for( int i=0; i < n; i++ ){
-            BMP257Image* cover_image = read_bmp_257(cover_files[i]);
-            if (!cover_image) {
-                fprintf(stderr, "Error reading cover file '%s'\n", cover_files[i]);
-                continue;
-            }
-            recovered_pixels[j] = malloc(sizeof(Mod257Pixel) * n);
-            Mod257Pixel* plane_pixels = malloc(sizeof(Mod257Pixel) * cover_image->info_header.width * cover_image->info_header.height);
-
-            flatten_matrix(cover_image->pixels, cover_image->info_header.height, cover_image->info_header.width, plane_pixels);
-            
-            read_from_shares(plane_pixels, recovered_pixels[j], i, j); // Reads the transport images with the assigned shares
-
-            seed = cover_image->file_header.reserved2; // Get the seed from the cover image
-
-            free(plane_pixels);
-            free_bmp257_image(cover_image);
+    Mod257Pixel* recovered_pixels[300*300/k];
+    for ( int i=0; i< 300*300/k; i++ ){
+        recovered_pixels[i] = malloc(sizeof(Mod257Pixel) * n);
+    }
+    printf("hola\n");
+    
+    for( int i=0; i < n; i++ ){
+        printf("i:%d\n",i);
+        BMP257Image* cover_image = read_bmp_257(cover_files[i]);
+        if (!cover_image) {
+            fprintf(stderr, "Error reading cover file '%s'\n", cover_files[i]);
+            continue;
         }
+        
+        Mod257Pixel* plane_pixels = malloc(sizeof(Mod257Pixel) * cover_image->info_header.width * cover_image->info_header.height);
+        flatten_matrix(cover_image->pixels, cover_image->info_header.height, cover_image->info_header.width, plane_pixels);
+        for( int j=0,a=0; j < max_bytes-1; j+=k,a++ ){
+            printf("j:%d\n", j);
+            read_from_shares(plane_pixels, recovered_pixels[a], i, j); // Reads the transport images with the assigned shares
+        }
+        seed = cover_image->file_header.reserved2; // Get the seed from the cover image
+
+        free(plane_pixels);
+        free_bmp257_image(cover_image);
     }
 
     BMP257Image* secret_image = create_bmp_257(NULL, 300, 300);
