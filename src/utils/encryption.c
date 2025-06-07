@@ -10,7 +10,7 @@ void unscramble_flattened_image(Mod257Pixel* image, int size);
 void get_shares(Mod257Pixel* pixel_values, int k, int n, Mod257Pixel* result);
 int pow_mod(int base, int exp, int mod);
 void evaluate_shamir(Mod257Pixel* pixel_values, int k, int x, Mod257Pixel* result);
-void process_image(BMP257Image * image);
+void process_image(BMP257Image * image, Mod257Pixel** pixels);
 void unflatten_matrix(Mod257Pixel* flat, int height, int width, Mod257Pixel** matrix); 
 void flatten_matrix(Mod257Pixel** matrix, int height, int width, Mod257Pixel* flat); 
 // ---------------------------------------------------------
@@ -70,8 +70,6 @@ void cover_in_files(BMP257Image* secret_image, const char** cover_files, int k, 
 
         free_bmp257_image(cover_image);
     }
-    free(pixel_values);
-    free(shares);
 }
 
 
