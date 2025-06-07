@@ -160,16 +160,40 @@ void evaluate_shamir(Mod257Pixel* pixel_values, int k, int x, Mod257Pixel* resul
 //  ...
 // [11250][B0 B1 B2 B3 B4 .. Bn]
 // ------------------------------------------ 
-void process_image(BMP257Image * image, Mod257Pixel** processedPixels, int k, int n){
+void process_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, int n) {
     int height = image->info_header.height;
     int width = image->info_header.width;
-    Mod257Pixel * flattened_pixels = malloc(sizeof(Mod257Pixel)*height*width);
+    int total_pixels = height * width;
+
+    Mod257Pixel *flattened_pixels = malloc(sizeof(Mod257Pixel) * total_pixels);
+    if (!flattened_pixels) return;
+
     flatten_matrix(image->pixels, height, width, flattened_pixels);
-    scramble_flattened_image(flattened_pixels, height*width);
+    scramble_flattened_image(flattened_pixels, total_pixels);
 
-    for(int i = 0; i < height*width; i+=8){
+    //Agarro de a tandas de k pixeles
+    for (int i = 0, j = 0; i < total_pixels; i += k, j++) {
+        Mod257Pixel *aux = malloc(sizeof(Mod257Pixel) * k);
+        if (!aux) 
+        break;
 
+        for (int w = 0; w < k; w++) {
+            aux[w] = flattened_pixels[i + w];
+        }
+
+        Mod257Pixel *results = malloc(sizeof(Mod257Pixel) * n);
+        if (!results) {
+            free(aux);
+            break;
+        }
+
+        get_shares(aux, k, n, results);
+        processed_pixels[j] = results;
+
+        free(aux);
     }
+
+    free(flattened_pixels);
 }
 
 void flatten_matrix(Mod257Pixel** matrix, int height, int width, Mod257Pixel* flat) {
