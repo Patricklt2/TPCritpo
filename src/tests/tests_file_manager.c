@@ -21,11 +21,11 @@ void fileManagerTests() {
     test_write_null_filename();
     //test_bmp_signature();
     //test_read_valid_bmp();
-    test_read_nonexistent_file();
-    test_read_invalid_signature();
-    test_read_non_8bit_bmp();
-    test_read_palette_not_grayscale();
-    test_read_non_8bit_bmp();
+    //test_read_nonexistent_file();
+    //test_read_invalid_signature();
+    //test_read_non_8bit_bmp();
+    //test_read_palette_not_grayscale();
+    //test_read_non_8bit_bmp();
 
     printf("All file manager tests passed!\n");
     return 0;

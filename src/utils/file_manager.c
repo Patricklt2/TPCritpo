@@ -365,6 +365,7 @@ int write_bmp_257(const BMP257Image* image, const char* filename){
         }
     }
 
+    free(complete_filename);
     free(row_buffer);
     fclose(file);
     return 0;
