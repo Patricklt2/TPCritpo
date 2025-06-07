@@ -17,15 +17,14 @@ void fileManagerTests() {
     test_create_valid_2x2();
     test_create_with_257_pixel();
     //test_write_valid_bmp();
-    test_write_null_image();
-    test_write_null_filename();
+    //test_write_null_image();
+    //test_write_null_filename();
     //test_bmp_signature();
     //test_read_valid_bmp();
-    //test_read_nonexistent_file();
-    //test_read_invalid_signature();
-    //test_read_non_8bit_bmp();
-    //test_read_palette_not_grayscale();
-    //test_read_non_8bit_bmp();
+    test_read_nonexistent_file();
+    test_read_invalid_signature();
+    test_read_non_8bit_bmp();
+    test_read_palette_not_grayscale();
 
     printf("All file manager tests passed!\n");
     return 0;

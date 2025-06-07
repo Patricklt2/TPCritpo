@@ -1,12 +1,22 @@
 #include <file_manager.h>
-
 BMP257Image* read_bmp_257(const char* filename) {
+    if (!filename) {
+        fprintf(stderr, "Invalid filename\n");
+        return NULL;
+    }
+
     char* base_path = "./src/";
     char* complete_filename = malloc(strlen(filename) + strlen(base_path) + 1);
-    complete_filename = strcpy(complete_filename, base_path);
-    complete_filename = strcat(complete_filename, filename);
-    FILE* file = fopen(complete_filename, "rb");
+    if (!complete_filename) {
+        perror("Memory allocation failed");
+        return NULL;
+    }
+    
+    strcpy(complete_filename, base_path);
+    strcat(complete_filename, filename);
 
+    FILE* file = fopen(complete_filename, "rb");
+    free(complete_filename);  // Free the filename buffer immediately after use
     if (!file) {
         perror("Error opening file");
         return NULL;
@@ -20,11 +30,15 @@ BMP257Image* read_bmp_257(const char* filename) {
         return NULL;
     }
 
+    // Initialize pointers to NULL for safe cleanup
+    image->palette = NULL;
+    image->pixels = NULL;
+
     // Read BMP headers
     if (fread(&image->file_header, sizeof(BMPFileHeader), 1, file) != 1 ||
         fread(&image->info_header, sizeof(BMPInfoHeader), 1, file) != 1) {
-        fclose(file);
         free(image);
+        fclose(file);
         perror("Error reading headers");
         return NULL;
     }
@@ -32,8 +46,8 @@ BMP257Image* read_bmp_257(const char* filename) {
     // Verify BMP format
     if (image->file_header.signature != 0x4D42 || 
         image->info_header.bits_per_pixel != 8) {
-        fclose(file);
         free(image);
+        fclose(file);
         fprintf(stderr, "Only 8-bit grayscale BMP files are supported\n");
         return NULL;
     }
@@ -41,16 +55,16 @@ BMP257Image* read_bmp_257(const char* filename) {
     // Read color palette (256 entries)
     image->palette = malloc(256 * sizeof(RGBQuad));
     if (!image->palette) {
-        fclose(file);
         free(image);
+        fclose(file);
         perror("Palette allocation failed");
         return NULL;
     }
 
     if (fread(image->palette, sizeof(RGBQuad), 256, file) != 256) {
-        fclose(file);
         free(image->palette);
         free(image);
+        fclose(file);
         perror("Error reading palette");
         return NULL;
     }
@@ -59,9 +73,9 @@ BMP257Image* read_bmp_257(const char* filename) {
     for (int i = 0; i < 256; i++) {
         if (image->palette[i].red != image->palette[i].green ||
             image->palette[i].red != image->palette[i].blue) {
-            fclose(file);
             free(image->palette);
             free(image);
+            fclose(file);
             fprintf(stderr, "Palette is not grayscale\n");
             return NULL;
         }
@@ -75,22 +89,30 @@ BMP257Image* read_bmp_257(const char* filename) {
     // Allocate pixel matrix
     image->pixels = malloc(height * sizeof(Mod257Pixel*));
     if (!image->pixels) {
-        fclose(file);
         free(image->palette);
         free(image);
+        fclose(file);
         perror("Pixel matrix allocation failed");
         return NULL;
     }
 
+    // Initialize all row pointers to NULL
+    for (int i = 0; i < height; i++) {
+        image->pixels[i] = NULL;
+    }
+
+    // Allocate each row
     for (int i = 0; i < height; i++) {
         image->pixels[i] = malloc(width * sizeof(Mod257Pixel));
         if (!image->pixels[i]) {
             // Cleanup already allocated rows
-            for (int j = 0; j < i; j++) free(image->pixels[j]);
+            for (int j = 0; j < i; j++) {
+                free(image->pixels[j]);
+            }
             free(image->pixels);
-            fclose(file);
             free(image->palette);
             free(image);
+            fclose(file);
             perror("Row allocation failed");
             return NULL;
         }
@@ -101,9 +123,9 @@ BMP257Image* read_bmp_257(const char* filename) {
     if (!row_buffer) {
         for (int i = 0; i < height; i++) free(image->pixels[i]);
         free(image->pixels);
-        fclose(file);
         free(image->palette);
         free(image);
+        fclose(file);
         perror("Row buffer allocation failed");
         return NULL;
     }
@@ -117,9 +139,9 @@ BMP257Image* read_bmp_257(const char* filename) {
             free(row_buffer);
             for (int i = 0; i < height; i++) free(image->pixels[i]);
             free(image->pixels);
-            fclose(file);
             free(image->palette);
             free(image);
+            fclose(file);
             perror("Error reading pixel data");
             return NULL;
         }
@@ -139,9 +161,9 @@ BMP257Image* read_bmp_257(const char* filename) {
             }
         }
     }
+
     free(row_buffer);
     fclose(file);
-    free(complete_filename);
     return image;
 }
 
