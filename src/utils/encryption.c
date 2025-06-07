@@ -11,6 +11,8 @@ void get_shares(Mod257Pixel* pixel_values, int k, int n, Mod257Pixel* result);
 int pow_mod(int base, int exp, int mod);
 void evaluate_shamir(Mod257Pixel* pixel_values, int k, int x, Mod257Pixel* result);
 void process_image(BMP257Image * image);
+void unflatten_matrix(Mod257Pixel* flat, int height, int width, Mod257Pixel** matrix); 
+void flatten_matrix(Mod257Pixel** matrix, int height, int width, Mod257Pixel* flat); 
 // ---------------------------------------------------------
 
 int shamir_distribute( int k, const char* file_name, int n, const char** cover_files) {
@@ -53,10 +55,10 @@ void separate_pixels(Mod257Pixel** pixels, int k, Mod257Pixel** pixel_values) {
 
 void cover_in_files(BMP257Image* secret_image, const char** cover_files, int k, int n) {
     printf("Distributing into 8 cover files\n");
-    Mod257Pixel** pixel_values = malloc(MAX_BYTES * sizeof(Mod257Pixel*)); // n array of pixel values
-    //separate_pixels(secret_image->pixels, k, n, pixel_values);
-    Mod257Pixel* shares = malloc(n * sizeof(Mod257Pixel*));
-    get_shares(pixel_values, k, n, shares); // This should be implemented to get the shares
+    //TODO change to Height*width /k
+    Mod257Pixel** processed_pixels = malloc(MAX_BYTES * sizeof(Mod257Pixel*)); // n array of pixel values
+    process_image(secret_image, processed_pixels);
+
     for (int i = 0; i < MAX_BYTES; i++) {
         BMP257Image* cover_image = read_bmp_257(cover_files[i]);
         if (!cover_image) {
@@ -117,9 +119,9 @@ void unscramble_flattened_image(Mod257Pixel* image, int size) {
 // pixel values --> array aplanado de pixeles
 // genera las n shares
 void get_shares(Mod257Pixel* pixel_values, int k, int n, Mod257Pixel* result){
-        for(int i = 1; i <= n; i++){
-            evaluate_shamir(pixel_values, k, i, &result[i-1]);
-        }
+    for(int i = 1; i <= n; i++){
+        evaluate_shamir(pixel_values, k, i, &result[i-1]);
+    }
 }
 
 
@@ -138,7 +140,6 @@ int pow_mod(int base, int exp, int mod) {
     @param n: share operating
     @param result: Mod257Pixel structure to store the result of the evaluation
 */
-
 void evaluate_shamir(Mod257Pixel* pixel_values, int k, int x, Mod257Pixel* result){
     // f(k) = (pv[0] + pv[1] * n + pv[2] * n^2 + ... + pv[k-1] *n^(k-1)) mod 257
     // result = f(k);
@@ -155,9 +156,31 @@ void evaluate_shamir(Mod257Pixel* pixel_values, int k, int x, Mod257Pixel* resul
 }
 
 //this will scramble and process the shares
-void process_image(BMP257Image * image){
+// [b0, b1, b2, b3, b4, .. bn]
+// B --> b0 b1 b2 b3 b4 b5 b6 b7
+// [0][B0 B1 B2 B3 B4 B5 .. Bn]
+//  ...
+// [11250][B0....... Bn]
+// ------------------------------------------ 
+void process_image(BMP257Image * image, Mod257Pixel** processedPixels){
     int size = image->info_header.width*image->info_header.height;
     Mod257Pixel * flattened_pixels = malloc(sizeof(Mod257Pixel)*size);
     scramble_flattened_image(flattened_pixels, size);
 
+}
+
+void flatten_matrix(Mod257Pixel** matrix, int height, int width, Mod257Pixel* flat) {
+    for (int row = 0; row < height; row++) {
+        for (int col = 0; col < width; col++) {
+            flat[row * width + col] = matrix[row][col];
+        }
+    }
+}
+
+void unflatten_matrix(Mod257Pixel* flat, int height, int width, Mod257Pixel** matrix) {
+    for (int row = 0; row < height; row++) {
+        for (int col = 0; col < width; col++) {
+            matrix[row][col] = flat[row * width + col];
+        }
+    }
 }
