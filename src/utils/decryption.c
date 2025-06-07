@@ -1,16 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "decryption.h"
-#include "lagrange.h"
-
+#include <decryption.h>
+#include <lagrange.h>
+#include <encryption.h>
 
 
 void read_from_shares( Mod257Pixel* plane_pixels, Mod257Pixel pixel_values[], int share_index, int pixel_index) {
     char read_value = 0;
     for(int i = 0; i < 8; i++) {
         // Read the LSB of the pixel and set it to the i-th bit of read_value
-        read_value |= ((plane_pixels[pixel_index + i].value & 0x01) << 8-i-1);
+        read_value |= ((plane_pixels[pixel_index + i].value & 0x01) << (8-i-1));
     }
     pixel_values[share_index].value = read_value;
     
@@ -40,7 +40,7 @@ void recover_from_files(int k, int n, const char** cover_files, char* output_fil
             
             read_from_shares(plane_pixels, recovered_pixels[j], i, j); // Reads the transport images with the assigned shares
 
-            seed = cover_image->info_header.reserved2; // Get the seed from the cover image
+            seed = cover_image->file_header.reserved2; // Get the seed from the cover image
 
             free(plane_pixels);
             free_bmp257_image(cover_image);
@@ -48,7 +48,7 @@ void recover_from_files(int k, int n, const char** cover_files, char* output_fil
     }
 
     BMP257Image* secret_image = create_bmp_257(NULL, 300, 300);
-    secret_image->info_header.reserved2 = seed; // seed
+    secret_image->file_header.reserved2 = seed; // seed
     unprocess_image(secret_image,recovered_pixels, k, n);
 
     write_bmp_257(secret_image, output_file);
@@ -56,7 +56,6 @@ void recover_from_files(int k, int n, const char** cover_files, char* output_fil
     for (int i = 0; i < max_bytes; i++) {
         free(recovered_pixels[i]);
     }
-    free(recovered_pixels);
     free_bmp257_image(secret_image);
 
 }   

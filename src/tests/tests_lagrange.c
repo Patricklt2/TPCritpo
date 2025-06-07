@@ -294,3 +294,7 @@ void test_process_unprocess() {
     
     free_bmp257_image(img);
 }
+
+void test_write_read_LSB(){
+    
+}

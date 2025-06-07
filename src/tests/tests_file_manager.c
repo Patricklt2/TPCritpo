@@ -27,7 +27,6 @@ void fileManagerTests() {
     test_read_palette_not_grayscale();
 
     printf("All file manager tests passed!\n");
-    return 0;
 }
 
 void test_create_valid_2x2() {

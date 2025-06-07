@@ -16,8 +16,6 @@ int shamir_distribute( int k, const char* file_name, int n, const char** cover_f
 
     BMP257Image* secret_image = read_bmp_257(file_name);
 
-    char shades[k];
-
     // < 8
     if( k < 8 ){
 //        cover_in_files_less(secret_image, cover_files, k, n);
@@ -37,14 +35,14 @@ void write_with_shares( Mod257Pixel* plane_pixels, Mod257Pixel pixel_values[], i
     
     for(int i = 0; i < 8; i++) {
         // Clear the LSB of the pixel and set it to the i-th bit of pixel_values[share_index].value
-        plane_pixels[pixel_index + i].value = (plane_pixels[pixel_index + i].value & 0xFE) | ((pixel_values[share_index].value >> 8-i-1) & 1);
+        plane_pixels[pixel_index + i].value = (plane_pixels[pixel_index + i].value & 0xFE) | ((pixel_values[share_index].value >> (8-i-1)) & 1);
     }
     
 }
 
 void cover_in_files(BMP257Image* secret_image, const char** cover_files, int k, int n) {
     printf("Distributing into 8 cover files\n");
-    long max_bytes = secret_image->info_header.with * secret_image->info_header.height;
+    long max_bytes = secret_image->info_header.width * secret_image->info_header.height;
     
     Mod257Pixel** processed_pixels = malloc(max_bytes * sizeof(Mod257Pixel*)); // n array of pixel values
     process_image(secret_image, processed_pixels, k, n);
@@ -57,7 +55,7 @@ void cover_in_files(BMP257Image* secret_image, const char** cover_files, int k, 
                 fprintf(stderr, "Error reading cover file '%s'\n", cover_files[i]);
                 break;
             }
-            sercret_image->file_header.reserved1 = i + 1; // Assigning the share index to reserved1
+            secret_image->file_header.reserved1 = i + 1; // Assigning the share index to reserved1
             secret_image->file_header.reserved2 = seed; // Assigning the seed to reserved2
 
             Mod257Pixel* plane_pixels = malloc(sizeof(Mod257Pixel) * cover_image->info_header.width * cover_image->info_header.height);
@@ -74,7 +72,7 @@ void cover_in_files(BMP257Image* secret_image, const char** cover_files, int k, 
             // Save the modified cover image
             char output_filename[256];
             snprintf(output_filename, sizeof(output_filename), "encodings/share%d.bmp", i + 1);
-            write_bmp_257(cover_files[i], output_filename);
+            write_bmp_257(cover_image, output_filename);
             free(plane_pixels);
             free_bmp257_image(cover_image);
         }

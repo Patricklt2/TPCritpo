@@ -27,4 +27,6 @@ void flatten_matrix(Mod257Pixel** matrix, int height, int width, Mod257Pixel* fl
 void recover_polynomial(int* x_coords, Mod257Pixel* shares, int k, Mod257Pixel* coefficients); 
 void unprocess_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, int n);
 void scramble_flattened_image_xor(Mod257Pixel* image, int size, int64_t seed);
+
+void cover_in_files(BMP257Image* secret_image, const char** cover_files, int k, int n);
 #endif
