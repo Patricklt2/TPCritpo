@@ -3,6 +3,7 @@
 
 #define PRIME 257
 #define MAX_BYTES 300*(300/8)
+#define MAX_K 10
 
 // ------------------ Private Declarations ------------------
 void scramble_flattened_image(Mod257Pixel* image, int size);
@@ -209,5 +210,59 @@ void unflatten_matrix(Mod257Pixel* flat, int height, int width, Mod257Pixel** ma
         for (int col = 0; col < width; col++) {
             matrix[row][col] = flat[row * width + col];
         }
+    }
+}
+
+int modmul(int a, int b, int mod) { 
+    return (a * b) % mod;
+}
+
+int modinv(int a, int mod) {
+    a %= mod;
+    int res = 1;
+    for (int exp = mod-2; exp > 0; exp >>= 1) {
+        if (exp & 1) res = modmul(res, a, mod);
+        a = modmul(a, a, mod);
+    }
+    return res;
+}
+
+void recover_polynomial(int* x_coords, Mod257Pixel* shares, int k, Mod257Pixel* coefficients) {
+    int field_coeffs[MAX_K] = {0};
+
+    for (int i = 0; i < k; i++) {
+        int y_i = shares[i].is_257 ? 0 : shares[i].value;
+        
+        int numerator[MAX_K] = {0};
+        numerator[0] = 1;
+        int denom = 1;
+        int degree = 0;
+
+        for (int j = 0; j < k; j++) {
+            if (j == i) continue;
+            
+            // Multiply numerator by (x - x_j)
+            int temp[MAX_K] = {0};
+            for (int m = 0; m <= degree; m++) {
+                temp[m] = (temp[m] + modmul(numerator[m], PRIME - x_coords[j], PRIME)) % PRIME;
+                temp[m+1] = (temp[m+1] + numerator[m]) % PRIME;
+            }
+            degree++;
+            memcpy(numerator, temp, sizeof(temp));
+            
+            // Update denominator
+            denom = modmul(denom, (x_coords[i] - x_coords[j] + PRIME) % PRIME, PRIME);
+        }
+
+        int inv_denom = modinv(denom, PRIME);
+        for (int m = 0; m < k; m++) {
+            int term = modmul(modmul(y_i, numerator[m], PRIME), inv_denom, PRIME);
+            field_coeffs[m] = (field_coeffs[m] + term) % PRIME;
+        }
+    }
+
+    for (int i = 0; i < k; i++) {
+        coefficients[i].value = (field_coeffs[i] == 256) ? 0 : (uint8_t)field_coeffs[i];
+        coefficients[i].is_257 = (field_coeffs[i] == 256) ? 1 : 0;
     }
 }
