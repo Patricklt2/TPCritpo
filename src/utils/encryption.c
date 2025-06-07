@@ -3,7 +3,6 @@
 
 #define PRIME 257
 #define MAX_BYTES 300*(300/8)
-#define MAX_K 10
 
 // ------------------ Private Declarations ------------------
 void scramble_flattened_image(Mod257Pixel* image, int size);
@@ -14,6 +13,7 @@ void evaluate_shamir(Mod257Pixel* pixel_values, int k, int x, Mod257Pixel* resul
 void process_image(BMP257Image * image, Mod257Pixel** pixels, int k, int n);
 void unflatten_matrix(Mod257Pixel* flat, int height, int width, Mod257Pixel** matrix); 
 void flatten_matrix(Mod257Pixel** matrix, int height, int width, Mod257Pixel* flat); 
+void recover_polynomial(int* x_coords, Mod257Pixel* shares, int k, Mod257Pixel* coefficients); 
 // ---------------------------------------------------------
 
 int shamir_distribute( int k, const char* file_name, int n, const char** cover_files) {

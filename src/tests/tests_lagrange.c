@@ -176,3 +176,57 @@ void test_flatten_unflatten() {
     free(result);
     free(flat);
 }
+
+// === Test utility ===
+void print_coeffs(const char* label, Mod257Pixel* coeffs, int k) {
+    printf("%s: ", label);
+    for (int i = 0; i < k; i++) {
+        if (coeffs[i].is_257)
+            printf("[256] ");
+        else
+            printf("[%d] ", coeffs[i].value);
+    }
+    printf("\n");
+}
+
+int compare_polys(Mod257Pixel* a, Mod257Pixel* b, int k) {
+    for (int i = 0; i < k; i++) {
+        if (a[i].value != b[i].value || a[i].is_257 != b[i].is_257)
+            return 0;
+    }
+    return 1;
+}
+
+// === Main Test ===
+void test_lagrange_recovery() {
+    srand(time(NULL));
+    for (int test = 0; test < 5; test++) {
+        int k = 5 + rand() % 4;  // Degree + 1
+
+        // Random coefficients
+        Mod257Pixel coeffs[MAX_K];
+        for (int i = 0; i < k; i++) {
+            int val = rand() % 257;
+            coeffs[i].value = (val == 256) ? 0 : val;
+            coeffs[i].is_257 = (val == 256) ? 1 : 0;
+        }
+
+        // Generate shares
+        int x_coords[MAX_K];
+        Mod257Pixel shares[MAX_K];
+        for (int i = 0; i < k; i++) {
+            x_coords[i] = i + 1; // x = 1, 2, 3, ...
+            evaluate_shamir(coeffs, k, x_coords[i], &shares[i]);
+        }
+
+        // Recover
+        Mod257Pixel recovered[MAX_K];
+        recover_polynomial(x_coords, shares, k, recovered);
+
+        // Output
+        printf("Test %d\n", test + 1);
+        print_coeffs("Original", coeffs, k);
+        print_coeffs("Recovered", recovered, k);
+        printf(compare_polys(coeffs, recovered, k) ? "✅ Success\n\n" : "❌ Failure\n\n");
+    }
+}
