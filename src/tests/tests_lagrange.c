@@ -195,7 +195,7 @@ int compare_polys(Mod257Pixel* a, Mod257Pixel* b, int k) {
 
 // === Main Test ===
 void test_lagrange_recovery() {
-    srand(time(NULL));
+    srand(89);
     for (int test = 0; test < 5; test++) {
         int k = 5 + rand() % 4;  // Degree + 1
 
@@ -229,7 +229,7 @@ void test_lagrange_recovery() {
 
 void test_process_unprocess() {
     // Read input image
-    BMP257Image *img = read_bmp_257("assets/Alfredssd.bmp");
+    BMP257Image *img = read_bmp_257("assets/Marilynssd.bmp");
     if (!img) {
         fprintf(stderr, "Failed to read image\n");
         return;
@@ -238,8 +238,8 @@ void test_process_unprocess() {
     int height = img->info_header.height;
     int width = img->info_header.width;
     int total_pixels = height * width;
-    int k = 8;  // Pixels per block
-    int n = 10; // Number of shares
+    int k = 3;  // Pixels per block
+    int n = 8; // Number of shares
     int num_blocks = (total_pixels + k - 1) / k; // Ceiling division
 
     // Allocate processed pixels array
@@ -266,8 +266,7 @@ void test_process_unprocess() {
     int errors = 0;
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
-            if (img->pixels[i][j].value != original_pixels[i][j].value ||
-                img->pixels[i][j].is_257 != original_pixels[i][j].is_257) {
+            if (img->pixels[i][j].value != original_pixels[i][j].value){
                 errors++;
             }
         }

@@ -9,7 +9,7 @@ void scramble_flattened_image(Mod257Pixel* image, int size, int64_t seed);
 void unscramble_flattened_image(Mod257Pixel* image, int size, int64_t seed); 
 void get_shares(Mod257Pixel* pixel_values, int k, int n, Mod257Pixel* result);
 int pow_mod(int base, int exp, int mod);
-void evaluate_shamir(Mod257Pixel* pixel_values, int k, int x, Mod257Pixel* result);
+uint16_t evaluate_shamir(Mod257Pixel* pixel_values, int k, int x);
 void process_image(BMP257Image * image, Mod257Pixel** pixels, int k, int n);
 void unflatten_matrix(Mod257Pixel* flat, int height, int width, Mod257Pixel** matrix); 
 void flatten_matrix(Mod257Pixel** matrix, int height, int width, Mod257Pixel* flat); 
@@ -118,13 +118,7 @@ void unscramble_flattened_image(Mod257Pixel* image, int size, int64_t seed) {
     free(indices);
 }
 
-// pixel values --> array aplanado de pixeles
-// genera las n shares
-void get_shares(Mod257Pixel* pixel_values, int k, int n, Mod257Pixel* result){
-    for(int i = 1; i <= n; i++){
-        evaluate_shamir(pixel_values, k, i, &result[i-1]);
-    }
-}
+
 
 int pow_mod(int base, int exp, int mod) {
     int result = 1;
@@ -134,25 +128,57 @@ int pow_mod(int base, int exp, int mod) {
     return result;
 }
 
+// pixel values --> array aplanado de pixeles
+// genera las n shares
+void get_shares(Mod257Pixel* pixel_values, int k, int n, Mod257Pixel* result) {
+    for (int i = 1; i <= n; i++) {
+        while (1) {
+            uint16_t eval = evaluate_shamir(pixel_values, k, i);
+            if (eval != 256) {
+                result[i - 1].value = (uint8_t)eval;
+                result[i - 1].is_257 = 0;
+                break;
+            }
+
+            // Step 5: Find lowest non-zero pixel and decrement it
+            int min_index = -1;
+            uint16_t min_value = 257;  // higher than any valid value
+
+            for (int j = 0; j < k; j++) {
+                if (pixel_values[j].value != 0 && pixel_values[j].value < min_value) {
+                    min_value = pixel_values[j].value;
+                    min_index = j;
+                }
+            }
+
+            if (min_index != -1) {
+                pixel_values[min_index].value = (pixel_values[min_index].value + PRIME - 1) % PRIME;
+                i = 1;
+            } else {
+                // Shouldn't happen: all coefficients are 0
+                result[i - 1].value = 0;
+                result[i - 1].is_257 = 0;
+                i=1;
+                break;
+            }
+        }
+    }
+}
 /*
     @param pixel_values: Array of Mod257Pixel pointers containing k pixel values
     @param k: Size of share array
     @param n: share operating
     @param result: Mod257Pixel structure to store the result of the evaluation
 */
-void evaluate_shamir(Mod257Pixel* pixel_values, int k, int x, Mod257Pixel* result){
-    // f(k) = (pv[0] + pv[1] * n + pv[2] * n^2 + ... + pv[k-1] *n^(k-1)) mod 257
-    // result = f(k);
-
+uint16_t evaluate_shamir(Mod257Pixel* pixel_values, int k, int x) {
     uint16_t aux = 0;
-    
-    for(int i = 0; i < k; i++){
-        uint16_t term = (pixel_values[i].value * pow_mod(x,i,PRIME))%PRIME;
-        aux = (aux + term)%PRIME;
-    } 
 
-    result->value = (aux == 256) ? 0 : (uint8_t)aux;
-    result->is_257 = (aux == 256) ? 1 : 0;
+    for (int i = 0; i < k; i++) {
+        uint16_t term = (pixel_values[i].value * pow_mod(x, i, PRIME)) % PRIME;
+        aux = (aux + term) % PRIME;
+    }
+
+    return aux;
 }
 
 //this will scramble and process the shares
