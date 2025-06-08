@@ -34,5 +34,8 @@ void unprocess_image_partial(
     int n,
     const int *indices  // Length k; values in range 0 to n-1
 );
+void recover_from_files_v2(int k, int n, const char** cover_files, char* output_file);
+void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int k, int n);
+
 void cover_in_files(BMP257Image* secret_image, const char** cover_files, int k, int n);
 #endif

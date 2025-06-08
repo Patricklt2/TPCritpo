@@ -332,7 +332,7 @@ void test_cover_and_recover() {
     BMP257Image* original_secret = read_bmp_257("assets/Albertssd.bmp");
 
     // Cover the secret into images
-    cover_in_files(original_secret, cover_files, k, n);
+    cover_in_files_v2(original_secret, cover_files, k, n);
 
     // Recover from any k of the shares (you could shuffle/select any k)
     const char* subset[8] = {
@@ -345,7 +345,7 @@ void test_cover_and_recover() {
         "encodings/share7.bmp",
         "encodings/share8.bmp"
     };
-    recover_from_files(k, 8, subset, "encodings/hola2.bmp");
+    recover_from_files_v2(k, 8, subset, "encodings/hola2.bmp");
 
     BMP257Image* recovered_secret = read_bmp_257("encodings/hola2.bmp");
 

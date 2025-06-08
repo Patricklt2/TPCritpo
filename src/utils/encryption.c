@@ -353,7 +353,7 @@ void unprocess_image_partial(
     int height = image->info_header.height;
     int width = image->info_header.width;
     int total_pixels = height * width;
-    int num_blocks = (total_pixels + k - 1) / k;
+    int num_blocks = total_pixels / k;
 
     Mod257Pixel *flattened_pixels = malloc(sizeof(Mod257Pixel) * total_pixels);
     if (!flattened_pixels) return;
@@ -475,7 +475,7 @@ void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int 
     int height = secret_image->info_header.height;
     int width = secret_image->info_header.width;
 
-    Mod257Pixel ** processed_pixels = malloc(sizeof(Mod257Pixel)*(height*width)/k);
+    Mod257Pixel ** processed_pixels = malloc(sizeof(Mod257Pixel*)*height*width/k);
     process_image(secret_image, processed_pixels, k, n);
 
     /*
@@ -543,9 +543,17 @@ void recover_from_files_v2(int k, int n, const char** cover_files, char* output_
 
     uint16_t seed = cover_file->file_header.reserved2;
 
+    Mod257Pixel ** processed_pixels = malloc(sizeof(Mod257Pixel)*height*width/k);
+
+    for(int i = 0; i < height*width/k; i++){
+        processed_pixels[i] = malloc(sizeof(Mod257Pixel)*n);
+    }
+
+
     for(int i = 0; i < n; i++){
+        uint64_t start_index = 0;  
         if(i != 0 ){
-            cover_file->read_bmp_257(cover_files[i]);
+            cover_file = read_bmp_257(cover_files[i]);
         }
 
         shadow_numbers[shadow_idx++] =  cover_file->file_header.reserved1;
@@ -554,14 +562,20 @@ void recover_from_files_v2(int k, int n, const char** cover_files, char* output_
         flatten_matrix(cover_file->pixels, cover_file->info_header.height, cover_file->info_header.width, flat_pixels);
 
         for(int j = 0; j < width*height/k; j++){
-
+            
             // Tengo que recorrer el flat pixels y recuperar los datos
-            for(int bit_idx = 0; bit_idx < 8; bit_idx++){
-                uint8_t bit_val = (secret_val >> (7 - bit_idx)) & 1;
-                flat_pixels[j + bit_idx].value = (flat_pixels[j + bit_idx].value & 0xFE) | bit_val;
+            uint8_t extracted_byte = 0;
+            for (int b = 0; b < 8; b++) {
+                extracted_byte <<= 1;
+                extracted_byte |= (flat_pixels[start_index + b].value & 1);
             }
+            processed_pixels[j][i].value = extracted_byte;
+            start_index+=8;
         }
     }
 
-    Mod257Pixel ** processed_pixels = malloc(sizeof(Mod257Pixel)*height*width/k);
+    BMP257Image * outImage = create_bmp_257(NULL, height, width);
+    unprocess_image_partial(outImage, processed_pixels, k, n, shadow_numbers);
+
+    write_bmp_257(outImage, output_file);
 }
