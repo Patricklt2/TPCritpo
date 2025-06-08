@@ -19,4 +19,5 @@ void test_lagrange_recovery();
 void test_process_unprocess();
 void test_write_read_LSB();
 void test_cover_and_recover();
+void test_unprocess_partial();
 #endif

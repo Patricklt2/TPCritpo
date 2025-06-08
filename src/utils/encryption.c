@@ -329,6 +329,63 @@ void unprocess_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, 
     free(flattened_pixels);
 }
 
+/**
+ * Reconstructs the original image from processed pixels using
+ * (k, n) secret sharing recovery. The shares are used to recover
+ * the original pixels, which are then unscrambled and reshaped into
+ * the original 2D image format.
+ *
+ * @param image The BMP257Image structure to store the reconstructed image.
+ *              The `pixels` field will be overwritten with recovered data.
+ * @param processed_pixels An array of Mod257Pixel pointers. Each pointer
+ *                         holds n shares corresponding to a block of k pixels.
+ * @param k The number of pixels originally shared together (threshold).
+ * @param n The number of shares available per block (total number of shares).
+ * @param indices Subset of the shadows to be used
+ */
+void unprocess_image_partial(
+    BMP257Image *image,
+    Mod257Pixel **processed_pixels,
+    int k,
+    int n,
+    const int *indices  // Length k; values in range 0 to n-1
+) {
+    int height = image->info_header.height;
+    int width = image->info_header.width;
+    int total_pixels = height * width;
+    int num_blocks = (total_pixels + k - 1) / k;
+
+    Mod257Pixel *flattened_pixels = malloc(sizeof(Mod257Pixel) * total_pixels);
+    if (!flattened_pixels) return;
+
+    // Build x_coords from provided indices (typically x=1..n)
+    int x_coords[k];
+    for (int i = 0; i < k; i++) {
+        x_coords[i] = indices[i] + 1;
+    }
+
+    for (int i = 0, block_idx = 0; i < total_pixels && block_idx < num_blocks; i += k, block_idx++) {
+        // Pick k shares using the indices
+        Mod257Pixel selected_shares[k];
+        for (int j = 0; j < k; j++) {
+            selected_shares[j] = processed_pixels[block_idx][indices[j]];
+        }
+
+        // Reconstruct coefficients (original pixels) using only the selected shares
+        Mod257Pixel coefficients[k];
+        recover_polynomial(x_coords, selected_shares, k, coefficients);
+
+        int copy_len = (total_pixels - i) < k ? (total_pixels - i) : k;
+        for (int w = 0; w < copy_len; w++) {
+            flattened_pixels[i + w] = coefficients[w];
+        }
+    }
+
+    scramble_flattened_image_xor(flattened_pixels, total_pixels, 1000);
+    unflatten_matrix(flattened_pixels, height, width, image->pixels);
+    free(flattened_pixels);
+}
+
 void flatten_matrix(Mod257Pixel** matrix, int height, int width, Mod257Pixel* flat) {
     for (int row = 0; row < height; row++) {
         for (int col = 0; col < width; col++) {
@@ -416,7 +473,7 @@ void recover_polynomial(int* x_coords, Mod257Pixel* shares, int k, Mod257Pixel* 
 void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int k, int n){
     uint16_t seed = 1629;
     int height = secret_image->info_header.height;
-    int width = secret_image->file_header.width;
+    int width = secret_image->info_header.width;
 
     Mod257Pixel ** processed_pixels = malloc(sizeof(Mod257Pixel)*(height*width)/k);
     process_image(secret_image, processed_pixels, k, n);
@@ -449,12 +506,12 @@ void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int 
             uint8_t secret_val = processed_pixels[j][i].value;
 
             for(int bit_idx = 0; bit_idx < 8; bit_idx++){
-                uint8_t bit_val = (secret_val >> (7 - bit)) & 1;
+                uint8_t bit_val = (secret_val >> (7 - bit_idx)) & 1;
                 flat_pixels[j + bit_idx].value = (flat_pixels[j + bit_idx].value & 0xFE) | bit_val;
             }
         }
 
-        unflatten_matrix(flat_pixels, height, width, carrier->pixels;)
+        unflatten_matrix(flat_pixels, height, width, carrier->pixels);
         carrier->file_header.reserved1 = i + 1;
         carrier->file_header.reserved2 = seed;
 
@@ -466,8 +523,45 @@ void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int 
         free(carrier);
     }
 
-    for (int i = 0; i < max_bytes; i++) {
+    for (int i = 0; i < height*width/k; i++) {
         free(processed_pixels[i]);
     }
     free(processed_pixels);
 } 
+
+// I need to create the array from k shadows
+// process pixels and unflatten array
+void recover_from_files_v2(int k, int n, const char** cover_files, char* output_file){
+
+    BMP257Image * cover_file = read_bmp_257(cover_files[0]);
+
+    int height = cover_file->info_header.height;
+    int width = cover_file->info_header.width;
+
+    int * shadow_numbers[k];
+    int shadow_idx = 0;
+
+    uint16_t seed = cover_file->file_header.reserved2;
+
+    for(int i = 0; i < n; i++){
+        if(i != 0 ){
+            cover_file->read_bmp_257(cover_files[i]);
+        }
+
+        shadow_numbers[shadow_idx++] =  cover_file->file_header.reserved1;
+        Mod257Pixel * flat_pixels = malloc(sizeof(Mod257Pixel)*height*width);
+
+        flatten_matrix(cover_file->pixels, cover_file->info_header.height, cover_file->info_header.width, flat_pixels);
+
+        for(int j = 0; j < width*height/k; j++){
+
+            // Tengo que recorrer el flat pixels y recuperar los datos
+            for(int bit_idx = 0; bit_idx < 8; bit_idx++){
+                uint8_t bit_val = (secret_val >> (7 - bit_idx)) & 1;
+                flat_pixels[j + bit_idx].value = (flat_pixels[j + bit_idx].value & 0xFE) | bit_val;
+            }
+        }
+    }
+
+    Mod257Pixel ** processed_pixels = malloc(sizeof(Mod257Pixel)*height*width/k);
+}

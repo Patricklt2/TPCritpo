@@ -353,3 +353,80 @@ void test_cover_and_recover() {
     free_bmp257_image(original_secret);
     free_bmp257_image(recovered_secret);
 }
+
+
+void test_unprocess_partial() {
+    // Load the original image
+    BMP257Image *img = read_bmp_257("assets/Marilynssd.bmp");
+    if (!img) {
+        fprintf(stderr, "Failed to read input image.\n");
+        return;
+    }
+
+    int height = img->info_header.height;
+    int width = img->info_header.width;
+    int total_pixels = height * width;
+    int k = 4;  // Number of shares needed to reconstruct
+    int n = 8;  // Total number of shares created
+
+    int num_blocks = (total_pixels + k - 1) / k;
+
+    // Backup original pixels
+    Mod257Pixel **original_pixels = malloc(height * sizeof(Mod257Pixel*));
+    for (int i = 0; i < height; i++) {
+        original_pixels[i] = malloc(width * sizeof(Mod257Pixel));
+        memcpy(original_pixels[i], img->pixels[i], width * sizeof(Mod257Pixel));
+    }
+
+    // Allocate space for processed shares
+    Mod257Pixel **processed_pixels = malloc(num_blocks * sizeof(Mod257Pixel*));
+    for (int i = 0; i < num_blocks; i++) {
+        processed_pixels[i] = malloc(n * sizeof(Mod257Pixel));
+    }
+
+    // Generate the shares
+    process_image(img, processed_pixels, k, n);
+
+    // Set image back to garbage to verify full reconstruction
+    for (int i = 0; i < height; i++)
+        for (int j = 0; j < width; j++)
+            img->pixels[i][j].value = 0;
+
+    // Pick any k indices to recover from (e.g., shares 1,2,3,7)
+    int indices[] = {0, 1, 2, 6};  // 0-based indices
+
+    // Attempt reconstruction using only k shares
+    unprocess_image_partial(img, processed_pixels, k, n, indices);
+
+    // Compare to original pixels
+    int errors = 0;
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            if (img->pixels[i][j].value != original_pixels[i][j].value) {
+                errors++;
+            }
+        }
+    }
+
+    if (errors == 0) {
+        printf("Success: Partial reconstruction with k=%d shares succeeded perfectly.\n", k);
+    } else {
+        printf("Warning: %d pixel mismatches found during partial reconstruction.\n", errors);
+    }
+
+    // Write the output image to disk
+    write_bmp_257(img, "encodings/recovered_partial.bmp");
+
+    // Cleanup
+    for (int i = 0; i < height; i++) {
+        free(original_pixels[i]);
+    }
+    free(original_pixels);
+
+    for (int i = 0; i < num_blocks; i++) {
+        free(processed_pixels[i]);
+    }
+    free(processed_pixels);
+
+    free_bmp257_image(img);
+}
