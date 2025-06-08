@@ -411,3 +411,63 @@ void recover_polynomial(int* x_coords, Mod257Pixel* shares, int k, Mod257Pixel* 
         coefficients[i].is_257 = (field_coeffs[i] == 256) ? 1 : 0;
     }
 }
+
+
+void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int k, int n){
+    uint16_t seed = 1629;
+    int height = secret_image->info_header.height;
+    int width = secret_image->file_header.width;
+
+    Mod257Pixel ** processed_pixels = malloc(sizeof(Mod257Pixel)*(height*width)/k);
+    process_image(secret_image, processed_pixels, k, n);
+
+    /*
+    Despues de correr process image
+    en processed pixels tengo
+            0   1 ... n
+    [  0  ][a0 a1 ... an]
+    [  1  ][b0 b1 ... bn]
+    ...
+    [w*h/k][z0 z1 ... zn]
+
+    => Quiero Guardar all columns together as such
+        [a0 b0 ... z0]  carrier 0
+        [a1 b1 ... z1]  carrier 1
+        ....
+        [an bn ... zn]  carrier n
+
+
+        [ j ][i]
+    */
+
+
+    for(int i = 0; i < n; i++){
+        BMP257Image* carrier = read_bmp_257(cover_files[i]); 
+        Mod257Pixel * flat_pixels = malloc(sizeof(Mod257Pixel)*height*width);
+        flatten_matrix(carrier->pixels, carrier->info_header.height, carrier->info_header.width, flat_pixels);
+        for (int j = 0; j < width*height/k ; j++){
+            uint8_t secret_val = processed_pixels[j][i].value;
+
+            for(int bit_idx = 0; bit_idx < 8; bit_idx++){
+                uint8_t bit_val = (secret_val >> (7 - bit)) & 1;
+                flat_pixels[j + bit_idx].value = (flat_pixels[j + bit_idx].value & 0xFE) | bit_val;
+            }
+        }
+
+        unflatten_matrix(flat_pixels, height, width, carrier->pixels;)
+        carrier->file_header.reserved1 = i + 1;
+        carrier->file_header.reserved2 = seed;
+
+        free(flat_pixels);
+
+        char output_filename[256];
+        snprintf(output_filename, sizeof(output_filename), "encodings/share%d.bmp", i + 1);
+        write_bmp_257(carrier, output_filename);
+        free(carrier);
+    }
+
+    for (int i = 0; i < max_bytes; i++) {
+        free(processed_pixels[i]);
+    }
+    free(processed_pixels);
+} 
