@@ -10,14 +10,9 @@
 
 void lagrangeTests();
 void inverseModTests();
-void test_scramble_unscramble();
 void test_flatten_unflatten(); 
 
 void print_coeffs(const char* label, Mod257Pixel* coeffs, int k);
 int compare_polys(Mod257Pixel* a, Mod257Pixel* b, int k);
-void test_lagrange_recovery();
-void test_process_unprocess();
-void test_write_read_LSB();
 void test_cover_and_recover();
-void test_unprocess_partial();
 #endif

@@ -4,6 +4,7 @@
 #define MAX_BYTES 300*(300/8)
 
 int shamir_distribute( int k, const char* file_name, int n, const char** cover_files) {
+
     // Placeholder for the actual implementation of Shamir's Secret Sharing distribution
     // This function should distribute the secret image into n shares using k as the threshold
     printf("Distributing secret image '%s' into %d shares with a threshold of %d\n", file_name, n, k);
@@ -15,11 +16,13 @@ int shamir_distribute( int k, const char* file_name, int n, const char** cover_f
 
     BMP257Image* secret_image = read_bmp_257(file_name);
 
+    uint16_t seed = 1002;
+
     // < 8
     if( k < 8 ){
 //        cover_in_files_less(secret_image, cover_files, k, n);
     }else if( k == 8 ){
-        cover_in_files(secret_image, cover_files, k, n);
+        cover_in_files_v2(secret_image, cover_files, k, n, seed);
     }else{
   //      cover_in_files_more(secret_image, cover_files, k, n);
     }
@@ -247,104 +250,4 @@ void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int 
         free(processed_pixels[i]);
     }
     free(processed_pixels);
-}
-
-// -------------------------- Deprecated War Zone -------------------------------------------------
-
-void write_with_shares( Mod257Pixel* plane_pixels, Mod257Pixel pixel_values[], int share_index, int pixel_index) {
-    
-    for(int i = 0; i < 8; i++) {
-        // Clear the LSB of the pixel and set it to the i-th bit of pixel_values[share_index].value
-        plane_pixels[pixel_index + i].value = (plane_pixels[pixel_index + i].value & 0xFE) | ((pixel_values[share_index].value >> (7-i)) & 1);
-    }
-    
-}
-
-void cover_in_files(BMP257Image* secret_image, const char** cover_files, int k, int n) {
-    printf("Distributing into 8 cover files\n");
-    long max_bytes = secret_image->info_header.width * secret_image->info_header.height;
-    uint16_t seed = 1000; // Unique seed
-    Mod257Pixel** processed_pixels = malloc(max_bytes * sizeof(Mod257Pixel*)); // n array of pixel values
-    process_image(secret_image, processed_pixels, k, n, seed);
-
-
-    for( int i = 0; i < n; i++ ) {
-        BMP257Image* cover_image = read_bmp_257(cover_files[i]);
-        if (!cover_image) {
-            fprintf(stderr, "Error reading cover file '%s'\n", cover_files[i]);
-            break;
-        }
-        secret_image->file_header.reserved1 = i + 1; // Assigning the share index to reserved1
-        secret_image->file_header.reserved2 = seed; // Assigning the seed to reserved2
-
-        Mod257Pixel* plane_pixels = malloc(sizeof(Mod257Pixel) * cover_image->info_header.width * cover_image->info_header.height);
-        if (!plane_pixels) {
-            fprintf(stderr, "Memory allocation failed for plane pixels\n");
-            free_bmp257_image(cover_image);
-            break;
-        }
-        flatten_matrix(cover_image->pixels, cover_image->info_header.height, cover_image->info_header.width, plane_pixels);
-        for ( int j = 0, a=0; j < max_bytes-1; j+=k,a++ ){
-            printf("in loop: %d %d\n", j, i);
-            write_with_shares(plane_pixels, processed_pixels[a], i, j); // Writes the transport images with the asigned shares
-            printf("end loop: %d %d\n", j, i);
-        }
-
-        unflatten_matrix(plane_pixels, cover_image->info_header.height, cover_image->info_header.width, cover_image->pixels);
-        free(plane_pixels);
-        char output_filename[256];
-        snprintf(output_filename, sizeof(output_filename), "encodings/share%d.bmp", i + 1);
-        write_bmp_257(cover_image, output_filename);
-        free_bmp257_image(cover_image);
-    }
-
-    // Free the processed pixels
-    for (int i = 0; i < max_bytes; i++) {
-        free(processed_pixels[i]);
-    }
-    free(processed_pixels);
-
-}
-
-//Fisher Yates Style scramble
-void scramble_flattened_image(Mod257Pixel* image, int size, int64_t seed) {
-    setSeed(seed);
-    for (int i = size - 1; i > 0; i--) {
-        int j = nextChar() % (i + 1);
-
-        Mod257Pixel temp = image[i];
-        image[i] = image[j];
-        image[j] = temp;
-    }
-}
-
-//Fisher Yates Style unscramble
-void unscramble_flattened_image(Mod257Pixel* image, int size, int64_t seed) {
-    setSeed(seed);
-    // Store original permutation
-    int* indices = malloc(size * sizeof(int));
-    for (int i = 0; i < size; i++) {
-        indices[i] = i;
-    }
-
-    // Apply same shuffle to indices array
-    for (int i = size - 1; i > 0; i--) {
-        int j = nextChar() % (i + 1);
-        int tmp = indices[i];
-        indices[i] = indices[j];
-        indices[j] = tmp;
-    }
-
-    // Reverse permutation
-    Mod257Pixel* copy = malloc(size * sizeof(Mod257Pixel));
-    for (int i = 0; i < size; i++) {
-        copy[indices[i]] = image[i];
-    }
-
-    for (int i = 0; i < size; i++) {
-        image[i] = copy[i];
-    }
-
-    free(copy);
-    free(indices);
 }

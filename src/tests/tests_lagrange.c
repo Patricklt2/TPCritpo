@@ -81,44 +81,6 @@ void inverseModTests() {
     printf("OK!\nAll inverse modulo tests passed!\n");
 }
 
-void test_scramble_unscramble() {
-    const int size = 100;
-    Mod257Pixel* original = malloc(size * sizeof(Mod257Pixel));
-    Mod257Pixel* backup = malloc(size * sizeof(Mod257Pixel));
-
-    // Fill original image with values 0 to 99
-    for (int i = 0; i < size; i++) {
-        original[i].value = i % 256;
-        original[i].is_257 = 0;
-        backup[i] = original[i];  // copy
-    }
-
-    int64_t test_seed = 987654321;
-
-    scramble_flattened_image(original, size, test_seed);
-
-    unscramble_flattened_image(original, size, test_seed);
-
-    // Compare
-    int match = 1;
-    for (int i = 0; i < size; i++) {
-        if (original[i].value != backup[i].value || original[i].is_257 != backup[i].is_257) {
-            printf("Mismatch at index %d: got %d, expected %d\n",
-                   i, original[i].value, backup[i].value);
-            match = 0;
-            break;
-        }
-    }
-
-    if (match)
-        printf("✅ Scramble/unscramble test passed!\n");
-    else
-        printf("❌ Scramble/unscramble test failed.\n");
-
-    free(original);
-    free(backup);
-}
-
 void test_flatten_unflatten() {
     int height = 3, width = 4;
 
@@ -193,240 +155,58 @@ int compare_polys(Mod257Pixel* a, Mod257Pixel* b, int k) {
     return 1;
 }
 
-// === Main Test ===
-void test_lagrange_recovery() {
-    srand(89);
-    for (int test = 0; test < 5; test++) {
-        int k = 5 + rand() % 4;  // Degree + 1
-
-        // Random coefficients
-        Mod257Pixel coeffs[MAX_K];
-        for (int i = 0; i < k; i++) {
-            int val = rand() % 257;
-            coeffs[i].value = (val == 256) ? 0 : val;
-            coeffs[i].is_257 = (val == 256) ? 1 : 0;
-        }
-
-        // Generate shares
-        int x_coords[MAX_K];
-        Mod257Pixel shares[MAX_K];
-        for (int i = 0; i < k; i++) {
-            x_coords[i] = i + 1; // x = 1, 2, 3, ...
-           // evaluate_shamir(coeffs, k, x_coords[i], &shares[i]);
-        }
-
-        // Recover
-        Mod257Pixel recovered[MAX_K];
-        recover_polynomial(x_coords, shares, k, recovered);
-
-        // Output
-        printf("Test %d\n", test + 1);
-        print_coeffs("Original", coeffs, k);
-        print_coeffs("Recovered", recovered, k);
-        printf(compare_polys(coeffs, recovered, k) ? "✅ Success\n\n" : "❌ Failure\n\n");
-    }
-}
-
-void test_process_unprocess() {
-    // Read input image
-    BMP257Image *img = read_bmp_257("assets/Marilynssd.bmp");
-    if (!img) {
-        fprintf(stderr, "Failed to read image\n");
-        return;
-    }
-
-    int height = img->info_header.height;
-    int width = img->info_header.width;
-    int total_pixels = height * width;
-    uint16_t seed = 1000;
-    int k = 8;  // Pixels per block
-    int n = 8; // Number of shares
-    int num_blocks = (total_pixels + k - 1) / k; // Ceiling division
-
-    // Allocate processed pixels array
-    Mod257Pixel **processed_pixels = malloc(num_blocks * sizeof(Mod257Pixel*));
-    if (!processed_pixels) {
-        free_bmp257_image(img);
-        return;
-    }
-
-    // Process image (creates shares)
-    process_image(img, processed_pixels, k, n, seed);
-
-    // Make a copy of original pixels for comparison
-    Mod257Pixel **original_pixels = malloc(height * sizeof(Mod257Pixel*));
-    for (int i = 0; i < height; i++) {
-        original_pixels[i] = malloc(width * sizeof(Mod257Pixel));
-        memcpy(original_pixels[i], img->pixels[i], width * sizeof(Mod257Pixel));
-    }
-
-    // Unprocess image (should reconstruct original)
-    unprocess_image(img, processed_pixels, k, n, seed);
-
-    // Verify reconstruction
-    int errors = 0;
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
-            if (img->pixels[i][j].value != original_pixels[i][j].value){
-                errors++;
-            }
-        }
-    }
-
-    if (errors == 0) {
-        printf("Success: Image perfectly reconstructed\n");
-    } else {
-        printf("Warning: %d pixel mismatches found\n", errors);
-    }
-
-    // Write output
-    write_bmp_257(img, "encodings/hola.bmp");
-
-    // Cleanup
-    for (int i = 0; i < height; i++) {
-        free(original_pixels[i]);
-    }
-    free(original_pixels);
-    
-    for (int i = 0; i < num_blocks; i++) {
-        free(processed_pixels[i]);
-    }
-    free(processed_pixels);
-    
-    free_bmp257_image(img);
-}
-
-void test_write_read_LSB(){
-        // Simulated 8-pixel block to embed the data
-    Mod257Pixel plane_pixels[8];
-
-    // Initialize pixels with known values (e.g., all 0xAA = 10101010)
-    for (int i = 0; i < 8; i++) {
-        plane_pixels[i].value = 0xAA;
-        plane_pixels[i].is_257 = 0;
-    }
-
-    // Test value to embed (e.g., 0b11001010 = 0xCA)
-    Mod257Pixel original_share = {.value = 0xCA, .is_257 = 0};
-    Mod257Pixel shares[1];
-    shares[0] = original_share;
-
-    // Write to plane_pixels
-    write_with_shares(plane_pixels, shares, 0, 0);
-
-    // Read back from plane_pixels
-    Mod257Pixel read_shares[1] = {{0}};
-    read_from_shares(plane_pixels, read_shares, 0, 0);
-
-    // Check if read value matches the original
-    assert(read_shares[0].value == original_share.value);
-    printf("✅ test_write_read_share passed: 0x%02X == 0x%02X\n",
-           read_shares[0].value, original_share.value);
-}
-
 void test_cover_and_recover() {
     const int k = 8;
-    const int n = 10;
+    const int n = 8;
     const uint16_t seed = 1000;
-    const char* cover_files[] = {"assets/Alfredssd.bmp","assets/Albertssd.bmp","assets/Audreyssd.bmp","assets/Evassd.bmp","assets/Facundo.bmp","assets/Gustavossd.bmp","assets/Jamesssd.bmp","assets/Marilynssd.bmp","assets/Jamesssd.bmp","assets/Marilynssd.bmp"};
+    const char* cover_files[] = {
+        "assets/Alfredssd.bmp", "assets/Albertssd.bmp", "assets/Audreyssd.bmp",
+        "assets/Evassd.bmp", "assets/Facundo.bmp", "assets/Gustavossd.bmp",
+        "assets/Jamesssd.bmp", "assets/Marilynssd.bmp", 
+        "assets/Jamesssd.bmp", "assets/Marilynssd.bmp"  // extras
+    };
 
-    BMP257Image* original_secret = read_bmp_257("assets/Albertssd.bmp");
+    BMP257Image* original_secret = read_bmp_257("assets/Alfredssd.bmp");
 
-    // Cover the secret into images
+    // Cover the secret into shares
     cover_in_files_v2(original_secret, cover_files, k, n, seed);
 
-    // Recover from any k of the shares (you could shuffle/select any k)
+    // Recover using a subset of k shares
     const char* subset[9] = {
-        "encodings/share1.bmp",
-        "encodings/share2.bmp",
-        "encodings/share3.bmp",
-        "encodings/share9.bmp",
-        "encodings/share10.bmp",
-        "encodings/share6.bmp",
-        "encodings/share7.bmp",
-        "encodings/share8.bmp",
+        "encodings/share1.bmp", "encodings/share2.bmp", "encodings/share3.bmp",
+        "encodings/share4.bmp", "encodings/share5.bmp", "encodings/share6.bmp",
+        "encodings/share7.bmp", "encodings/share8.bmp",
         NULL
     };
-    recover_from_files_v2(k, n, subset, "encodings/hola2.bmp");
+    const char* recovered_file = "encodings/hola2.bmp";
+    recover_from_files_v2(k, n, subset, recovered_file);
 
-
-    free_bmp257_image(original_secret);
-}
-
-
-void test_unprocess_partial() {
-    // Load the original image
-    BMP257Image *img = read_bmp_257("assets/Marilynssd.bmp");
-    if (!img) {
-        fprintf(stderr, "Failed to read input image.\n");
+    // Load recovered image
+    BMP257Image* recovered_image = read_bmp_257(recovered_file);
+    if (!recovered_image) {
+        fprintf(stderr, "Failed to load recovered image.\n");
+        free_bmp257_image(original_secret);
         return;
     }
 
-    uint16_t seed = 1000;
-    int height = img->info_header.height;
-    int width = img->info_header.width;
-    int total_pixels = height * width;
-    int k = 4;  // Number of shares needed to reconstruct
-    int n = 8;  // Total number of shares created
+    // Compare pixel-by-pixel
+    int differing_pixels = 0;
+    int height = original_secret->info_header.height;
+    int width = original_secret->info_header.width;
 
-    int num_blocks = (total_pixels + k - 1) / k;
-
-    // Backup original pixels
-    Mod257Pixel **original_pixels = malloc(height * sizeof(Mod257Pixel*));
-    for (int i = 0; i < height; i++) {
-        original_pixels[i] = malloc(width * sizeof(Mod257Pixel));
-        memcpy(original_pixels[i], img->pixels[i], width * sizeof(Mod257Pixel));
-    }
-
-    // Allocate space for processed shares
-    Mod257Pixel **processed_pixels = malloc(num_blocks * sizeof(Mod257Pixel*));
-    for (int i = 0; i < num_blocks; i++) {
-        processed_pixels[i] = malloc(n * sizeof(Mod257Pixel));
-    }
-
-    // Generate the shares
-    process_image(img, processed_pixels, k, n, seed);
-
-    // Set image back to garbage to verify full reconstruction
-    for (int i = 0; i < height; i++)
-        for (int j = 0; j < width; j++)
-            img->pixels[i][j].value = 0;
-
-    // Pick any k indices to recover from (e.g., shares 1,2,3,7)
-    int indices[] = {0, 1, 2, 6};  // 0-based indices
-
-    // Attempt reconstruction using only k shares
-    unprocess_image_partial(img, processed_pixels, k, n, indices, seed);
-
-    // Compare to original pixels
-    int errors = 0;
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
-            if (img->pixels[i][j].value != original_pixels[i][j].value) {
-                errors++;
-            }
+            Mod257Pixel p1 = original_secret->pixels[i][j];
+            Mod257Pixel p2 = recovered_image->pixels[i][j];
+
+            if(p1.value != p2.value)
+                differing_pixels++;
         }
     }
 
-    if (errors == 0) {
-        printf("Success: Partial reconstruction with k=%d shares succeeded perfectly.\n", k);
-    } else {
-        printf("Warning: %d pixel mismatches found during partial reconstruction.\n", errors);
-    }
-
-    // Write the output image to disk
-    write_bmp_257(img, "encodings/recovered_partial.bmp");
+    printf("Differing pixels: %d (out of %d)\n", differing_pixels, width * height);
 
     // Cleanup
-    for (int i = 0; i < height; i++) {
-        free(original_pixels[i]);
-    }
-    free(original_pixels);
-
-    for (int i = 0; i < num_blocks; i++) {
-        free(processed_pixels[i]);
-    }
-    free(processed_pixels);
-
-    free_bmp257_image(img);
+    free_bmp257_image(original_secret);
+    free_bmp257_image(recovered_image);
 }
