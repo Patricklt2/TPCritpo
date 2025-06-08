@@ -98,7 +98,7 @@ void recover_from_files_v2(int k, int n, const char** cover_files, char* output_
     // Read first cover file to get dimensions and seed
 
     int shadow_count = count_strings(cover_files);
-    int shadow_indices[k];
+    int shadow_indices[n];
 
     BMP257Image *first_cover = read_bmp_257(cover_files[0]);
     if (!first_cover) {

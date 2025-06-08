@@ -156,7 +156,7 @@ int compare_polys(Mod257Pixel* a, Mod257Pixel* b, int k) {
 }
 
 void test_cover_and_recover() {
-    const int k = 8;
+    const int k = 6;
     const int n = 8;
     const uint16_t seed = 1000;
     const char* cover_files[] = {
