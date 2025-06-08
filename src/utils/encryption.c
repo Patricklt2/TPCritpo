@@ -539,10 +539,22 @@ void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int 
     free(processed_pixels);
 }
 
+int count_strings(const char **arr) {
+    int count = 0;
+    while (arr[count] != NULL) {
+        count++;
+    }
+    return count;
+}
+
 // I need to create the array from k shadows
 // process pixels and unflatten array
 void recover_from_files_v2(int k, int n, const char** cover_files, char* output_file) {
     // Read first cover file to get dimensions and seed
+
+    int shadow_count = count_strings(cover_files);
+    int shadow_indices[k];
+
     BMP257Image *first_cover = read_bmp_257(cover_files[0]);
     if (!first_cover) {
         fprintf(stderr, "Error reading first cover file\n");
@@ -577,7 +589,12 @@ void recover_from_files_v2(int k, int n, const char** cover_files, char* output_
 
     // Process all cover files to extract shares
     for (int i = 0; i < n; i++) {
+        if(cover_files[i] == NULL){
+            break;
+        }
         BMP257Image* cover = (i == 0) ? first_cover : read_bmp_257(cover_files[i]);
+        shadow_indices[i] = cover->file_header.reserved1;
+
         if (!cover) {
             fprintf(stderr, "Error reading cover file '%s'\n", cover_files[i]);
             continue;
@@ -602,19 +619,14 @@ void recover_from_files_v2(int k, int n, const char** cover_files, char* output_
                 extracted_byte <<= 1;
                 extracted_byte |= (flat_pixels[pixel_idx].value & 1);
             }
-            processed_pixels[j][i].value = extracted_byte;
-            processed_pixels[j][i].is_257 = 0;
+            processed_pixels[j][shadow_indices[i]-1].value = extracted_byte;
+            processed_pixels[j][shadow_indices[i]-1].is_257 = 0;
         }
 
         free(flat_pixels);
         if (i != 0) free_bmp257_image(cover);
     }
 
-    // Select k shares to use for reconstruction (first k shares in this case)
-    int shadow_indices[k];
-    for (int i = 0; i < k; i++) {
-        shadow_indices[i] = i;
-    }
 
     // Create output image and reconstruct
     BMP257Image *outImage = create_bmp_257(NULL, height, width);
@@ -627,7 +639,7 @@ void recover_from_files_v2(int k, int n, const char** cover_files, char* output_
         return;
     }
 
-    unprocess_image_partial(outImage, processed_pixels, k, n, shadow_indices);
+    unprocess_image_partial_v2(outImage, processed_pixels, k, n, shadow_indices, shadow_count);
 
     // Write output file
     write_bmp_257(outImage, output_file);
@@ -637,4 +649,41 @@ void recover_from_files_v2(int k, int n, const char** cover_files, char* output_
     free(processed_pixels);
     free_bmp257_image(outImage);
     free_bmp257_image(first_cover);
+}
+
+void unprocess_image_partial_v2(BMP257Image *image, Mod257Pixel **processed_pixels, int k, int n,
+                             const int *shadow_indices, int num_shadows) {
+    if (num_shadows < k) return;  // Not enough shares to reconstruct
+
+    int height = image->info_header.height;
+    int width = image->info_header.width;
+    int total_pixels = height * width;
+    int num_blocks = (total_pixels + k - 1) / k;
+
+    Mod257Pixel *flattened_pixels = malloc(sizeof(Mod257Pixel) * total_pixels);
+    if (!flattened_pixels) return;
+
+    // For each block of k pixels
+    for (int i = 0, block_idx = 0; i < total_pixels && block_idx < num_blocks; i += k, block_idx++) {
+        Mod257Pixel selected_shares[n];
+        int x_coords[n];
+
+        for (int j = 0; j < k; j++) {
+            int shadow_index = shadow_indices[j]; // Get the j-th available shadow
+            x_coords[j] = shadow_index;       // Convert 0-based index to 1-based x
+            selected_shares[j] = processed_pixels[block_idx][shadow_index-1]; // Share from that shadow
+        }
+
+        Mod257Pixel coefficients[n];
+        recover_polynomial(x_coords, selected_shares, k, coefficients);
+
+        int copy_len = (total_pixels - i) < k ? (total_pixels - i) : k;
+        for (int w = 0; w < copy_len; w++) {
+            flattened_pixels[i + w] = coefficients[w];
+        }
+    }
+
+    scramble_flattened_image_xor(flattened_pixels, total_pixels, 1000);
+    unflatten_matrix(flattened_pixels, height, width, image->pixels);
+    free(flattened_pixels);
 }

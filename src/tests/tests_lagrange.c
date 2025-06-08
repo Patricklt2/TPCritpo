@@ -335,17 +335,18 @@ void test_cover_and_recover() {
     cover_in_files_v2(original_secret, cover_files, k, n);
 
     // Recover from any k of the shares (you could shuffle/select any k)
-    const char* subset[8] = {
+    const char* subset[9] = {
         "encodings/share1.bmp",
         "encodings/share2.bmp",
         "encodings/share3.bmp",
-        "encodings/share4.bmp",
-        "encodings/share5.bmp",
+        "encodings/share9.bmp",
+        "encodings/share10.bmp",
         "encodings/share6.bmp",
         "encodings/share7.bmp",
         "encodings/share8.bmp",
+        NULL
     };
-    recover_from_files_v2(k, 8, subset, "encodings/hola2.bmp");
+    recover_from_files_v2(k, n, subset, "encodings/hola2.bmp");
 
 
     free_bmp257_image(original_secret);

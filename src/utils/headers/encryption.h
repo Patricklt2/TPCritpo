@@ -38,4 +38,6 @@ void recover_from_files_v2(int k, int n, const char** cover_files, char* output_
 void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int k, int n);
 
 void cover_in_files(BMP257Image* secret_image, const char** cover_files, int k, int n);
+void unprocess_image_partial_v2(BMP257Image *image, Mod257Pixel **processed_pixels, int k, int n,
+                             const int *shadow_indices, int num_shadows); 
 #endif
