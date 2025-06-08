@@ -325,9 +325,9 @@ void test_write_read_LSB(){
 
 void test_cover_and_recover() {
     const int k = 8;
-    const int n = 8;
+    const int n = 10;
     
-    const char* cover_files[] = {"assets/Alfredssd.bmp","assets/Albertssd.bmp","assets/Audreyssd.bmp","assets/Evassd.bmp","assets/Facundo.bmp","assets/Gustavossd.bmp","assets/Jamesssd.bmp","assets/Marilynssd.bmp"};
+    const char* cover_files[] = {"assets/Alfredssd.bmp","assets/Albertssd.bmp","assets/Audreyssd.bmp","assets/Evassd.bmp","assets/Facundo.bmp","assets/Gustavossd.bmp","assets/Jamesssd.bmp","assets/Marilynssd.bmp","assets/Jamesssd.bmp","assets/Marilynssd.bmp"};
 
     BMP257Image* original_secret = read_bmp_257("assets/Albertssd.bmp");
 
@@ -343,15 +343,12 @@ void test_cover_and_recover() {
         "encodings/share5.bmp",
         "encodings/share6.bmp",
         "encodings/share7.bmp",
-        "encodings/share8.bmp"
+        "encodings/share8.bmp",
     };
     recover_from_files_v2(k, 8, subset, "encodings/hola2.bmp");
 
-    BMP257Image* recovered_secret = read_bmp_257("encodings/hola2.bmp");
-
 
     free_bmp257_image(original_secret);
-    free_bmp257_image(recovered_secret);
 }
 
 

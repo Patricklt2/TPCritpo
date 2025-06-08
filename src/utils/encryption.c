@@ -470,112 +470,171 @@ void recover_polynomial(int* x_coords, Mod257Pixel* shares, int k, Mod257Pixel* 
 }
 
 
-void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int k, int n){
+void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int k, int n) {
     uint16_t seed = 1629;
     int height = secret_image->info_header.height;
     int width = secret_image->info_header.width;
+    int total_pixels = height * width;
 
-    Mod257Pixel ** processed_pixels = malloc(sizeof(Mod257Pixel*)*height*width/k);
+    // Allocate processed pixels array
+    Mod257Pixel **processed_pixels = malloc(sizeof(Mod257Pixel*) * (total_pixels / k));
+    if (!processed_pixels) {
+        fprintf(stderr, "Memory allocation failed for processed_pixels\n");
+        return;
+    }
+
     process_image(secret_image, processed_pixels, k, n);
 
-    /*
-    Despues de correr process image
-    en processed pixels tengo
-            0   1 ... n
-    [  0  ][a0 a1 ... an]
-    [  1  ][b0 b1 ... bn]
-    ...
-    [w*h/k][z0 z1 ... zn]
+    for (int i = 0; i < n; i++) {
+        BMP257Image* carrier = read_bmp_257(cover_files[i]);
+        if (!carrier) {
+            fprintf(stderr, "Error reading cover file '%s'\n", cover_files[i]);
+            continue;
+        }
 
-    => Quiero Guardar all columns together as such
-        [a0 b0 ... z0]  carrier 0
-        [a1 b1 ... z1]  carrier 1
-        ....
-        [an bn ... zn]  carrier n
+        // Verify carrier dimensions match secret image
+        if (carrier->info_header.height != height || carrier->info_header.width != width) {
+            fprintf(stderr, "Cover image dimensions don't match secret image\n");
+            free_bmp257_image(carrier);
+            continue;
+        }
 
+        Mod257Pixel *flat_pixels = malloc(sizeof(Mod257Pixel) * total_pixels);
+        if (!flat_pixels) {
+            fprintf(stderr, "Memory allocation failed for flat_pixels\n");
+            free_bmp257_image(carrier);
+            continue;
+        }
 
-        [ j ][i]
-    */
+        flatten_matrix(carrier->pixels, height, width, flat_pixels);
 
-
-    for(int i = 0; i < n; i++){
-        BMP257Image* carrier = read_bmp_257(cover_files[i]); 
-        Mod257Pixel * flat_pixels = malloc(sizeof(Mod257Pixel)*height*width);
-        flatten_matrix(carrier->pixels, carrier->info_header.height, carrier->info_header.width, flat_pixels);
-        for (int j = 0; j < width*height/k ; j++){
+        // Embed shares in LSBs
+        for (int j = 0; j < total_pixels / k; j++) {
             uint8_t secret_val = processed_pixels[j][i].value;
-
-            for(int bit_idx = 0; bit_idx < 8; bit_idx++){
+            for (int bit_idx = 0; bit_idx < 8; bit_idx++) {
+                int pixel_idx = j * 8 + bit_idx;
+                if (pixel_idx >= total_pixels) break;  // Prevent overflow
+                
                 uint8_t bit_val = (secret_val >> (7 - bit_idx)) & 1;
-                flat_pixels[j + bit_idx].value = (flat_pixels[j + bit_idx].value & 0xFE) | bit_val;
+                flat_pixels[pixel_idx].value = (flat_pixels[pixel_idx].value & 0xFE) | bit_val;
             }
         }
 
         unflatten_matrix(flat_pixels, height, width, carrier->pixels);
-        carrier->file_header.reserved1 = i + 1;
-        carrier->file_header.reserved2 = seed;
-
-        free(flat_pixels);
+        carrier->file_header.reserved1 = i + 1;  // Share index
+        carrier->file_header.reserved2 = seed;   // Common seed
 
         char output_filename[256];
         snprintf(output_filename, sizeof(output_filename), "encodings/share%d.bmp", i + 1);
         write_bmp_257(carrier, output_filename);
-        free(carrier);
+
+        free(flat_pixels);
+        free_bmp257_image(carrier);
     }
 
-    for (int i = 0; i < height*width/k; i++) {
+    // Free processed pixels
+    for (int i = 0; i < total_pixels / k; i++) {
         free(processed_pixels[i]);
     }
     free(processed_pixels);
-} 
+}
 
 // I need to create the array from k shadows
 // process pixels and unflatten array
-void recover_from_files_v2(int k, int n, const char** cover_files, char* output_file){
-
-    BMP257Image * cover_file = read_bmp_257(cover_files[0]);
-
-    int height = cover_file->info_header.height;
-    int width = cover_file->info_header.width;
-
-    int * shadow_numbers[k];
-    int shadow_idx = 0;
-
-    uint16_t seed = cover_file->file_header.reserved2;
-
-    Mod257Pixel ** processed_pixels = malloc(sizeof(Mod257Pixel)*height*width/k);
-
-    for(int i = 0; i < height*width/k; i++){
-        processed_pixels[i] = malloc(sizeof(Mod257Pixel)*n);
+void recover_from_files_v2(int k, int n, const char** cover_files, char* output_file) {
+    // Read first cover file to get dimensions and seed
+    BMP257Image *first_cover = read_bmp_257(cover_files[0]);
+    if (!first_cover) {
+        fprintf(stderr, "Error reading first cover file\n");
+        return;
     }
 
+    int height = first_cover->info_header.height;
+    int width = first_cover->info_header.width;
+    int total_pixels = height * width;
+    uint16_t seed = first_cover->file_header.reserved2;
 
-    for(int i = 0; i < n; i++){
-        uint64_t start_index = 0;  
-        if(i != 0 ){
-            cover_file = read_bmp_257(cover_files[i]);
+    // Allocate processed pixels array
+    Mod257Pixel **processed_pixels = malloc(sizeof(Mod257Pixel*) * (total_pixels / k));
+    if (!processed_pixels) {
+        fprintf(stderr, "Memory allocation failed for processed_pixels\n");
+        free_bmp257_image(first_cover);
+        return;
+    }
+
+    // Initialize processed pixels
+    for (int i = 0; i < total_pixels / k; i++) {
+        processed_pixels[i] = malloc(sizeof(Mod257Pixel) * n);
+        if (!processed_pixels[i]) {
+            fprintf(stderr, "Memory allocation failed for processed_pixels[%d]\n", i);
+            // Clean up previously allocated memory
+            for (int j = 0; j < i; j++) free(processed_pixels[j]);
+            free(processed_pixels);
+            free_bmp257_image(first_cover);
+            return;
+        }
+    }
+
+    // Process all cover files to extract shares
+    for (int i = 0; i < n; i++) {
+        BMP257Image* cover = (i == 0) ? first_cover : read_bmp_257(cover_files[i]);
+        if (!cover) {
+            fprintf(stderr, "Error reading cover file '%s'\n", cover_files[i]);
+            continue;
         }
 
-        shadow_numbers[shadow_idx++] =  cover_file->file_header.reserved1;
-        Mod257Pixel * flat_pixels = malloc(sizeof(Mod257Pixel)*height*width);
+        Mod257Pixel *flat_pixels = malloc(sizeof(Mod257Pixel) * total_pixels);
+        if (!flat_pixels) {
+            fprintf(stderr, "Memory allocation failed for flat_pixels\n");
+            if (i != 0) free_bmp257_image(cover);
+            continue;
+        }
 
-        flatten_matrix(cover_file->pixels, cover_file->info_header.height, cover_file->info_header.width, flat_pixels);
+        flatten_matrix(cover->pixels, height, width, flat_pixels);
 
-        for(int j = 0; j < width*height/k; j++){
-            
-            // Tengo que recorrer el flat pixels y recuperar los datos
+        // Extract shares from LSBs
+        for (int j = 0; j < total_pixels / k; j++) {
             uint8_t extracted_byte = 0;
             for (int b = 0; b < 8; b++) {
+                int pixel_idx = j * 8 + b;
+                if (pixel_idx >= total_pixels) break;  // Prevent overflow
+                
                 extracted_byte <<= 1;
-                extracted_byte |= (flat_pixels[start_index + b].value & 1);
+                extracted_byte |= (flat_pixels[pixel_idx].value & 1);
             }
             processed_pixels[j][i].value = extracted_byte;
-            start_index+=8;
+            processed_pixels[j][i].is_257 = 0;
         }
+
+        free(flat_pixels);
+        if (i != 0) free_bmp257_image(cover);
     }
 
-    BMP257Image * outImage = create_bmp_257(NULL, height, width);
-    unprocess_image_partial(outImage, processed_pixels, k, n, shadow_numbers);
+    // Select k shares to use for reconstruction (first k shares in this case)
+    int shadow_indices[k];
+    for (int i = 0; i < k; i++) {
+        shadow_indices[i] = i;
+    }
 
+    // Create output image and reconstruct
+    BMP257Image *outImage = create_bmp_257(NULL, height, width);
+    if (!outImage) {
+        fprintf(stderr, "Error creating output image\n");
+        // Clean up
+        for (int i = 0; i < total_pixels / k; i++) free(processed_pixels[i]);
+        free(processed_pixels);
+        free_bmp257_image(first_cover);
+        return;
+    }
+
+    unprocess_image_partial(outImage, processed_pixels, k, n, shadow_indices);
+
+    // Write output file
     write_bmp_257(outImage, output_file);
+
+    // Clean up
+    for (int i = 0; i < total_pixels / k; i++) free(processed_pixels[i]);
+    free(processed_pixels);
+    free_bmp257_image(outImage);
+    free_bmp257_image(first_cover);
 }
