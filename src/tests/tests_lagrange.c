@@ -238,6 +238,7 @@ void test_process_unprocess() {
     int height = img->info_header.height;
     int width = img->info_header.width;
     int total_pixels = height * width;
+    uint16_t seed = 1000;
     int k = 8;  // Pixels per block
     int n = 8; // Number of shares
     int num_blocks = (total_pixels + k - 1) / k; // Ceiling division
@@ -250,7 +251,7 @@ void test_process_unprocess() {
     }
 
     // Process image (creates shares)
-    process_image(img, processed_pixels, k, n);
+    process_image(img, processed_pixels, k, n, seed);
 
     // Make a copy of original pixels for comparison
     Mod257Pixel **original_pixels = malloc(height * sizeof(Mod257Pixel*));
@@ -260,7 +261,7 @@ void test_process_unprocess() {
     }
 
     // Unprocess image (should reconstruct original)
-    unprocess_image(img, processed_pixels, k, n);
+    unprocess_image(img, processed_pixels, k, n, seed);
 
     // Verify reconstruction
     int errors = 0;
@@ -326,13 +327,13 @@ void test_write_read_LSB(){
 void test_cover_and_recover() {
     const int k = 8;
     const int n = 10;
-    
+    const uint16_t seed = 1000;
     const char* cover_files[] = {"assets/Alfredssd.bmp","assets/Albertssd.bmp","assets/Audreyssd.bmp","assets/Evassd.bmp","assets/Facundo.bmp","assets/Gustavossd.bmp","assets/Jamesssd.bmp","assets/Marilynssd.bmp","assets/Jamesssd.bmp","assets/Marilynssd.bmp"};
 
     BMP257Image* original_secret = read_bmp_257("assets/Albertssd.bmp");
 
     // Cover the secret into images
-    cover_in_files_v2(original_secret, cover_files, k, n);
+    cover_in_files_v2(original_secret, cover_files, k, n, seed);
 
     // Recover from any k of the shares (you could shuffle/select any k)
     const char* subset[9] = {
@@ -361,6 +362,7 @@ void test_unprocess_partial() {
         return;
     }
 
+    uint16_t seed = 1000;
     int height = img->info_header.height;
     int width = img->info_header.width;
     int total_pixels = height * width;
@@ -383,7 +385,7 @@ void test_unprocess_partial() {
     }
 
     // Generate the shares
-    process_image(img, processed_pixels, k, n);
+    process_image(img, processed_pixels, k, n, seed);
 
     // Set image back to garbage to verify full reconstruction
     for (int i = 0; i < height; i++)
@@ -394,7 +396,7 @@ void test_unprocess_partial() {
     int indices[] = {0, 1, 2, 6};  // 0-based indices
 
     // Attempt reconstruction using only k shares
-    unprocess_image_partial(img, processed_pixels, k, n, indices);
+    unprocess_image_partial(img, processed_pixels, k, n, indices, seed);
 
     // Compare to original pixels
     int errors = 0;

@@ -21,23 +21,17 @@ void unscramble_flattened_image(Mod257Pixel* image, int size, int64_t seed);
 void get_shares(Mod257Pixel* pixel_values, int k, int n, Mod257Pixel* result);
 int pow_mod(int base, int exp, int mod);
 uint16_t evaluate_shamir(Mod257Pixel* pixel_values, int k, int x);
-void process_image(BMP257Image * image, Mod257Pixel** pixels, int k, int n);
+void process_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, int n, uint16_t seed); 
 void unflatten_matrix(Mod257Pixel* flat, int height, int width, Mod257Pixel** matrix); 
 void flatten_matrix(Mod257Pixel** matrix, int height, int width, Mod257Pixel* flat); 
 void recover_polynomial(int* x_coords, Mod257Pixel* shares, int k, Mod257Pixel* coefficients); 
-void unprocess_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, int n);
+void unprocess_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, int n, uint16_t seed);
 void scramble_flattened_image_xor(Mod257Pixel* image, int size, int64_t seed);
-void unprocess_image_partial(
-    BMP257Image *image,
-    Mod257Pixel **processed_pixels,
-    int k,
-    int n,
-    const int *indices  // Length k; values in range 0 to n-1
-);
+void unprocess_image_partial(BMP257Image *image, Mod257Pixel **processed_pixels, int k, int n, const int *indices, uint16_t seed);
 void recover_from_files_v2(int k, int n, const char** cover_files, char* output_file);
-void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int k, int n);
+void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int k, int n, uint16_t seed);
 
 void cover_in_files(BMP257Image* secret_image, const char** cover_files, int k, int n);
 void unprocess_image_partial_v2(BMP257Image *image, Mod257Pixel **processed_pixels, int k, int n,
-                             const int *shadow_indices, int num_shadows); 
+                             const int *shadow_indices, int num_shadows, uint16_t seed); 
 #endif

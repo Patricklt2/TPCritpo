@@ -43,10 +43,10 @@ void write_with_shares( Mod257Pixel* plane_pixels, Mod257Pixel pixel_values[], i
 void cover_in_files(BMP257Image* secret_image, const char** cover_files, int k, int n) {
     printf("Distributing into 8 cover files\n");
     long max_bytes = secret_image->info_header.width * secret_image->info_header.height;
-    
-    Mod257Pixel** processed_pixels = malloc(max_bytes * sizeof(Mod257Pixel*)); // n array of pixel values
-    process_image(secret_image, processed_pixels, k, n);
     uint16_t seed = 1000; // Unique seed
+    Mod257Pixel** processed_pixels = malloc(max_bytes * sizeof(Mod257Pixel*)); // n array of pixel values
+    process_image(secret_image, processed_pixels, k, n, seed);
+
 
     for( int i = 0; i < n; i++ ) {
         BMP257Image* cover_image = read_bmp_257(cover_files[i]);
@@ -239,7 +239,7 @@ uint16_t evaluate_shamir(Mod257Pixel* pixel_values, int k, int x) {
  *          number of shares required to reconstruct the block.
  * @param n The total number of shares to generate per block.
  */
-void process_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, int n) {
+void process_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, int n, uint16_t seed) {
     int height = image->info_header.height;
     int width = image->info_header.width;
     int total_pixels = height * width;
@@ -248,7 +248,7 @@ void process_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, in
     if (!flattened_pixels) return;
 
     flatten_matrix(image->pixels, height, width, flattened_pixels);
-    scramble_flattened_image_xor(flattened_pixels, total_pixels, 1000);
+    scramble_flattened_image_xor(flattened_pixels, total_pixels, seed);
 
     //Agarro de a tandas de k pixeles
     for (int i = 0, j = 0; i < total_pixels; i += k, j++) {
@@ -288,7 +288,7 @@ void process_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, in
  * @param k The number of pixels originally shared together (threshold).
  * @param n The number of shares available per block (total number of shares).
  */
-void unprocess_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, int n) {
+void unprocess_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, int n, uint16_t seed) {
     int height = image->info_header.height;
     int width = image->info_header.width;
     int total_pixels = height * width;
@@ -321,7 +321,7 @@ void unprocess_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, 
     }
 
     // Undo the scrambling
-    scramble_flattened_image_xor(flattened_pixels, total_pixels, 1000);
+    scramble_flattened_image_xor(flattened_pixels, total_pixels, seed);
 
     // Unflatten back into the image matrix
     unflatten_matrix(flattened_pixels, height, width, image->pixels);
@@ -343,13 +343,7 @@ void unprocess_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, 
  * @param n The number of shares available per block (total number of shares).
  * @param indices Subset of the shadows to be used
  */
-void unprocess_image_partial(
-    BMP257Image *image,
-    Mod257Pixel **processed_pixels,
-    int k,
-    int n,
-    const int *indices  // Length k; values in range 0 to n-1
-) {
+void unprocess_image_partial(BMP257Image *image, Mod257Pixel **processed_pixels, int k, int n, const int *indices, uint16_t seed) {
     int height = image->info_header.height;
     int width = image->info_header.width;
     int total_pixels = height * width;
@@ -381,7 +375,7 @@ void unprocess_image_partial(
         }
     }
 
-    scramble_flattened_image_xor(flattened_pixels, total_pixels, 1000);
+    scramble_flattened_image_xor(flattened_pixels, total_pixels, seed);
     unflatten_matrix(flattened_pixels, height, width, image->pixels);
     free(flattened_pixels);
 }
@@ -470,8 +464,7 @@ void recover_polynomial(int* x_coords, Mod257Pixel* shares, int k, Mod257Pixel* 
 }
 
 
-void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int k, int n) {
-    uint16_t seed = 1629;
+void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int k, int n, uint16_t seed) {
     int height = secret_image->info_header.height;
     int width = secret_image->info_header.width;
     int total_pixels = height * width;
@@ -483,7 +476,7 @@ void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int 
         return;
     }
 
-    process_image(secret_image, processed_pixels, k, n);
+    process_image(secret_image, processed_pixels, k, n, seed);
 
     for (int i = 0; i < n; i++) {
         BMP257Image* carrier = read_bmp_257(cover_files[i]);
@@ -639,7 +632,7 @@ void recover_from_files_v2(int k, int n, const char** cover_files, char* output_
         return;
     }
 
-    unprocess_image_partial_v2(outImage, processed_pixels, k, n, shadow_indices, shadow_count);
+    unprocess_image_partial_v2(outImage, processed_pixels, k, n, shadow_indices, shadow_count, seed);
 
     // Write output file
     write_bmp_257(outImage, output_file);
@@ -652,7 +645,7 @@ void recover_from_files_v2(int k, int n, const char** cover_files, char* output_
 }
 
 void unprocess_image_partial_v2(BMP257Image *image, Mod257Pixel **processed_pixels, int k, int n,
-                             const int *shadow_indices, int num_shadows) {
+                             const int *shadow_indices, int num_shadows, uint16_t seed) {
     if (num_shadows < k) return;  // Not enough shares to reconstruct
 
     int height = image->info_header.height;
@@ -683,7 +676,7 @@ void unprocess_image_partial_v2(BMP257Image *image, Mod257Pixel **processed_pixe
         }
     }
 
-    scramble_flattened_image_xor(flattened_pixels, total_pixels, 1000);
+    scramble_flattened_image_xor(flattened_pixels, total_pixels, seed);
     unflatten_matrix(flattened_pixels, height, width, image->pixels);
     free(flattened_pixels);
 }

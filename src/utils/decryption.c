@@ -52,7 +52,7 @@ void recover_from_files(int k, int n, const char** cover_files, char* output_fil
 
     BMP257Image* secret_image = create_bmp_257(NULL, 300, 300);
     secret_image->file_header.reserved2 = seed; // seed
-    unprocess_image(secret_image,recovered_pixels, k, n);
+    unprocess_image(secret_image,recovered_pixels, k, n, seed);
 
     write_bmp_257(secret_image, output_file);
     // Free allocated memory
