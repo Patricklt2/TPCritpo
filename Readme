@@ -1,3 +1,12 @@
 
+# TPCripto
+## Ejecutar desde el root del proyecto, TPCripto/ para poder hacer make all.
 
-## Ejecutar desde el root del proyecto, TPCripto/ para poder hacer make all y luego ./bin/main.out ...
+# Ejemplo de uso:
+
+## Compila el proyecto y genera el ejecutable en ./bin/main.out
+make all
+## Ejecutar el programa con los parámetros deseados:
+/bin/main.out -d --secret assets/Albertssd.bmp -k 8 -n 8
+
+./bin/main.out -r --secret encodings/hola.bmp -k 8 -n 8
