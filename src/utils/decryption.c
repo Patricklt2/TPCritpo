@@ -5,8 +5,48 @@
 #include <lagrange.h>
 #include <encryption.h>
 
+int check_seed(const char** cover_files, int k){
+    BMP257Image* first_cover = read_bmp_257(cover_files[0]);
+    if (!first_cover) {
+        fprintf(stderr, "Error reading first cover file\n");
+        return 1; // Return error code
+    }
+    uint16_t seed = first_cover->file_header.reserved2;
+    for (int i = 1; cover_files[i] != NULL && i < k; i++) {
+        BMP257Image* cover = read_bmp_257(cover_files[i]);
+        if (!cover) {
+            fprintf(stderr, "Error reading cover file '%s'\n", cover_files[i]);
+            free_bmp257_image(first_cover);
+            return 1; // Return error code
+        }
+        if (cover->file_header.reserved2 != seed) {
+            fprintf(stderr, "Seed mismatch in cover files\n");
+            free_bmp257_image(cover);
+            free_bmp257_image(first_cover);
+            return 1; // Return error code
+        }
+        free_bmp257_image(cover);
+    }
+    free_bmp257_image(first_cover);
+    return 0; // Return 0 if all seeds match
+}
 
+int shamir_recover(int k, char* output_file, int n, const char** cover_files) {
+    if (n < k) {
+        fprintf(stderr, "Error: n must be greater than or equal to k\n");
+        return 1; // Return error code
+    }
 
+    if (check_seed(cover_files, k)) {
+        fprintf(stderr, "Error: Invalid seed in cover files\n");
+        return 1; // Return error code
+    }
+    
+    recover_from_files_v2(k, n, cover_files, output_file);
+
+    return 0; // Return 0 on success
+
+}
 
 void unflatten_matrix(Mod257Pixel* flat, int height, int width, Mod257Pixel** matrix) {
     for (int row = 0; row < height; row++) {

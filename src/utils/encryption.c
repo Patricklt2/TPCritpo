@@ -15,20 +15,12 @@ int shamir_distribute( int k, const char* file_name, int n, const char** cover_f
     }
 
     BMP257Image* secret_image = read_bmp_257(file_name);
-
-    uint16_t seed = 1002;
-
-    // < 8
-    if( k < 8 ){
-//        cover_in_files_less(secret_image, cover_files, k, n);
-    }else if( k == 8 ){
-        cover_in_files_v2(secret_image, cover_files, k, n, seed);
-    }else{
-  //      cover_in_files_more(secret_image, cover_files, k, n);
+    if (!secret_image) {
+        fprintf(stderr, "Error reading secret image '%s'\n", file_name);
+        return 1; // Return error code
     }
 
-    // Free the secret image resources
-    free_bmp257_image(secret_image);
+    cover_in_files_v2( secret_image, cover_files, k, n, (uint16_t) rand());
     
     return 0; // Return 0 on success
 }
