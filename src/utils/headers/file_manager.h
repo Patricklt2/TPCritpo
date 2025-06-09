@@ -17,8 +17,8 @@
 typedef struct {
     uint16_t signature;      // 'BM' identifier (0x4D42)
     uint32_t file_size;      // Total file size in bytes
-    uint16_t reserved1;      // Reserved space (unused)
     uint16_t reserved2;      // Reserved space (unused)
+    uint16_t reserved1;      // Reserved space (unused)
     uint32_t pixel_offset;   // Offset to pixel data
 } BMPFileHeader;
 
