@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <decryption.h>
-#include <lagrange.h>
 #include <encryption.h>
 
 int check_seed(const char** cover_files, int k){
