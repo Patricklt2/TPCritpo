@@ -240,11 +240,31 @@ void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int 
         // Embed shares in LSBs
         for (int j = 0; j < padded_pixels / k; j++) {
             uint8_t secret_val = processed_pixels[j][i].value;
-            for (int bit_idx = 0; bit_idx < 8; bit_idx++) {
-                int pixel_idx = j * 8 + bit_idx;
-                if (pixel_idx >= total_pixels) break;  // Only embed within original bounds
-                flat_pixels[pixel_idx].value = (flat_pixels[pixel_idx].value & 0xFE) | ((secret_val >> (7 - bit_idx)) & 1);
+            if(8 <= k ){
+                for (int bit_idx = 0; bit_idx < 8; bit_idx++) {
+                    int pixel_idx = j * 8 + bit_idx;
+                    if (pixel_idx >= total_pixels) break;  // Only embed within original bounds
+                    flat_pixels[pixel_idx].value = (flat_pixels[pixel_idx].value & 0xFE) | ((secret_val >> (7 - bit_idx)) & 1);
+                }   
+            }else if ( k >= 4 && k < 8 ) { // [ 1 1 | 1 1 | 1 1 | 1 1 ] => los 2 primeros 6, 4 , 2 ,0
+                for (int bit_idx = 0; bit_idx < 4; bit_idx++) {
+                    int pixel_idx = j * k + bit_idx;
+                    if (pixel_idx >= total_pixels) break;  // Only embed within original bounds
+                    flat_pixels[pixel_idx].value = (flat_pixels[pixel_idx].value & 0xFC) | ((secret_val >> (6 - 2 * bit_idx)) & 0x3);
+                }
+
+            }else{
+                for (int bit_idx = 0; bit_idx < 3; bit_idx++) { // [ 1 1 1 | 1 1 1 | 1 1 ] => los 2 primeros 5, 2 
+                    int pixel_idx = j * k + bit_idx;
+                    if (pixel_idx >= total_pixels) break;  // Only embed within original bounds
+                    if ( bit_idx != 3 )
+                        flat_pixels[pixel_idx].value = (flat_pixels[pixel_idx].value & 0xFC) | ((secret_val >> (5 - 3*bit_idx)) & 0x7);
+                    else
+                        flat_pixels[pixel_idx].value = (flat_pixels[pixel_idx].value & 0xFC) | ((secret_val<< 1) & 0x7);
+
+                }
             }
+            
         }
 
         unflatten_matrix(flat_pixels, height, width, carrier->pixels);

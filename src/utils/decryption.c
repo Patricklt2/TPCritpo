@@ -151,12 +151,36 @@ void recover_from_files_v2(int k, int n, const char** cover_files, char* output_
 
         for (int j = 0; j < padded_pixels / k; j++) {
             uint8_t byte = 0;
-            for (int b = 0; b < 8; b++) {
-                int pixel_idx = j * 8 + b;
-                byte <<= 1;
-                if (pixel_idx < total_pixels)
-                    byte |= (flat_pixels[pixel_idx].value & 1);
+            if (k >= 8) { // [ 1 1 1 1 | 1 1 1 1 | 1 1 1 1 | 1 1 1 1 ] => los primeros 8 bits
+                for (int b = 0; b < 8; b++) {
+                    int pixel_idx = j * 8 + b;
+                    byte <<= 1;
+                    if (pixel_idx < total_pixels)
+                        byte |= (flat_pixels[pixel_idx].value & 1);
+                }
+            }else if ( k >= 4 && k < 8 ) { // [ 1 1 | 1 1 | 1 1 | 1 1 ] => los 2 primeros 6, 4 , 2 ,0
+                for (int b = 0; b < 4; b++) {
+                    int pixel_idx = j * k + b;
+                    byte <<= 2;
+                    if (pixel_idx < total_pixels)
+                        byte |= (flat_pixels[pixel_idx].value & 0x3); // 0000 0011
+                }
+            }else{
+                for (int b = 0; b < 3; b++) {
+                    int pixel_idx = j * k + b;
+                    if(b != 3){
+                        byte <<= 3;
+                        if (pixel_idx < total_pixels)
+                            byte |= (flat_pixels[pixel_idx].value & 0x7); // 0000 0111
+                    }else{
+                        byte <<= 2;
+                        char val = flat_pixels[pixel_idx].value >> 1;
+                        if (pixel_idx < total_pixels)
+                            byte |= (val & 0x3);
+                    }
+                }
             }
+
             processed_pixels[j][shadow_indices[i] - 1].value = byte;
             processed_pixels[j][shadow_indices[i] - 1].is_257 = 0;
         }
