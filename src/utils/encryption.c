@@ -145,35 +145,51 @@ void process_image(BMP257Image *image, Mod257Pixel **processed_pixels, int k, in
     int total_pixels = height * width;
 
     Mod257Pixel *flattened_pixels = malloc(sizeof(Mod257Pixel) * total_pixels);
-    if (!flattened_pixels) return;
+    if (!flattened_pixels) {
+        fprintf(stderr, "Memory allocation failed for flattened_pixels\n");
+        return;
+    }
 
     flatten_matrix(image->pixels, height, width, flattened_pixels);
     scramble_flattened_image_xor(flattened_pixels, total_pixels, seed);
 
-    //Agarro de a tandas de k pixeles
-    for (int i = 0, j = 0; i < total_pixels; i += k, j++) {
-        Mod257Pixel *aux = malloc(sizeof(Mod257Pixel) * k);
-        if (!aux) 
-        break;
+    int num_blocks = (total_pixels + k - 1) / k;
 
-        for (int w = 0; w < k; w++) {
-            aux[w] = flattened_pixels[i + w];
-        }
+    for (int block_idx = 0, pixel_idx = 0; block_idx < num_blocks; block_idx++, pixel_idx += k) {
+        int copy_len = (total_pixels - pixel_idx < k) ? (total_pixels - pixel_idx) : k;
 
-        Mod257Pixel *results = malloc(sizeof(Mod257Pixel) * n);
-        if (!results) {
-            free(aux);
+        Mod257Pixel *input_block = malloc(sizeof(Mod257Pixel) * k);
+        if (!input_block) {
+            fprintf(stderr, "Memory allocation failed for input_block\n");
             break;
         }
 
-        get_shares(aux, k, n, results);
-        processed_pixels[j] = results;
+        for (int w = 0; w < copy_len; w++) {
+            input_block[w] = flattened_pixels[pixel_idx + w];
+        }
 
-        free(aux);
+        // Fill remainder with zero if not full block
+        for (int w = copy_len; w < k; w++) {
+            input_block[w].value = 0;
+            input_block[w].is_257 = 0;
+        }
+
+        Mod257Pixel *shares = malloc(sizeof(Mod257Pixel) * n);
+        if (!shares) {
+            fprintf(stderr, "Memory allocation failed for shares\n");
+            free(input_block);
+            break;
+        }
+
+        get_shares(input_block, k, n, shares);
+        processed_pixels[block_idx] = shares;
+
+        free(input_block);
     }
 
     free(flattened_pixels);
 }
+
 
 void flatten_matrix(Mod257Pixel** matrix, int height, int width, Mod257Pixel* flat) {
     for (int row = 0; row < height; row++) {
@@ -188,15 +204,16 @@ void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int 
     int height = secret_image->info_header.height;
     int width = secret_image->info_header.width;
     int total_pixels = height * width;
+    int padded_pixels = ((total_pixels + k - 1) / k) * k;  // ceil division
 
     // Allocate processed pixels array
-    Mod257Pixel **processed_pixels = malloc(sizeof(Mod257Pixel*) * (total_pixels / k));
+    Mod257Pixel **processed_pixels = malloc(sizeof(Mod257Pixel*) * (padded_pixels / k));
     if (!processed_pixels) {
         fprintf(stderr, "Memory allocation failed for processed_pixels\n");
         return;
     }
 
-    process_image(secret_image, processed_pixels, k, n, seed);
+    process_image(secret_image, processed_pixels, k, n, seed);  // New version handles padding
 
     for (int i = 0; i < n; i++) {
         BMP257Image* carrier = read_bmp_257(cover_files[i]);
@@ -205,7 +222,6 @@ void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int 
             continue;
         }
 
-        // Verify carrier dimensions match secret image
         if (carrier->info_header.height != height || carrier->info_header.width != width) {
             fprintf(stderr, "Cover image dimensions don't match secret image\n");
             free_bmp257_image(carrier);
@@ -222,20 +238,18 @@ void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int 
         flatten_matrix(carrier->pixels, height, width, flat_pixels);
 
         // Embed shares in LSBs
-        for (int j = 0; j < total_pixels / k; j++) {
+        for (int j = 0; j < padded_pixels / k; j++) {
             uint8_t secret_val = processed_pixels[j][i].value;
             for (int bit_idx = 0; bit_idx < 8; bit_idx++) {
                 int pixel_idx = j * 8 + bit_idx;
-                if (pixel_idx >= total_pixels) break;  // Prevent overflow
-                
-                uint8_t bit_val = (secret_val >> (7 - bit_idx)) & 1;
-                flat_pixels[pixel_idx].value = (flat_pixels[pixel_idx].value & 0xFE) | bit_val;
+                if (pixel_idx >= total_pixels) break;  // Only embed within original bounds
+                flat_pixels[pixel_idx].value = (flat_pixels[pixel_idx].value & 0xFE) | ((secret_val >> (7 - bit_idx)) & 1);
             }
         }
 
         unflatten_matrix(flat_pixels, height, width, carrier->pixels);
-        carrier->file_header.reserved1 = i + 1;  // Share index
-        carrier->file_header.reserved2 = seed;   // Common seed
+        carrier->file_header.reserved1 = i + 1;
+        carrier->file_header.reserved2 = seed;
 
         char output_filename[256];
         snprintf(output_filename, sizeof(output_filename), "encodings/share%d.bmp", i + 1);
@@ -245,8 +259,7 @@ void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int 
         free_bmp257_image(carrier);
     }
 
-    // Free processed pixels
-    for (int i = 0; i < total_pixels / k; i++) {
+    for (int i = 0; i < padded_pixels / k; i++) {
         free(processed_pixels[i]);
     }
     free(processed_pixels);
