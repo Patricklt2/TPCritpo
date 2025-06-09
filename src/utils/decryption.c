@@ -237,7 +237,7 @@ void recover_from_files_v2(int k, int n, const char** cover_files, char* output_
         if (i != 0) free_bmp257_image(cover);
     }
 
-    BMP257Image *outImage = create_bmp_257(NULL, height, width);
+    BMP257Image *outImage = create_bmp_257(NULL, width, height);
     if (!outImage) {
         fprintf(stderr, "Error creating output image\n");
         for (int i = 0; i < padded_pixels / k; i++) free(processed_pixels[i]);
