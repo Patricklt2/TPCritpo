@@ -16,10 +16,10 @@
         printf("Stating processing...\n");
         // Here you would call the appropriate functions based on the parsed arguments
 
-        //Put cover file paths tour Current Working Directory (base path) will be ./src/ at first. Keep that in mind when assigning path.
-        const char* coverfiles[] = {"assets/Alfredssd.bmp","assets/Albertssd.bmp","assets/Audreyssd.bmp","assets/Evassd.bmp","assets/Facundo.bmp","assets/Gustavossd.bmp","assets/Jamesssd.bmp","assets/Marilynssd.bmp","assets/Jamesssd.bmp","assets/Marilynssd.bmp"};
+        //Put cover file paths tour Current Working Directory (base path) will be ./src/ at first. Keep that in mind when assigning path. Must be null terminated.
+        const char* coverfiles[] = {"assets/Alfredssd.bmp","assets/Albertssd.bmp","assets/Audreyssd.bmp","assets/Evassd.bmp","assets/Facundo.bmp","assets/Gustavossd.bmp","assets/Jamesssd.bmp","assets/Marilynssd.bmp","assets/Jamesssd.bmp","assets/Marilynssd.bmp", NULL};
        
-        //Put encoded file paths your Current Working Directory (base path) will be ./src/ at first. Keep that in mind when assigning path
+        //Put encoded file paths your Current Working Directory (base path) will be ./src/ at first. Keep that in mind when assigning path. Must be NULL terminated
         const char* encodedFiles[] = {"encodings/share1.bmp", "encodings/share2.bmp", "encodings/share3.bmp", "encodings/share4.bmp", "encodings/share5.bmp", "encodings/share6.bmp", "encodings/share7.bmp", "encodings/share8.bmp", "encodings/share9.bmp", "encodings/share10.bmp", NULL};
         if ( arguments->distribute ){
             if (  arguments->n < arguments->k ) {
