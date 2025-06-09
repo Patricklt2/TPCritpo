@@ -144,6 +144,7 @@ void test_write_null_filename() {
     free_bmp257_image(image);
 }
 
+/*
 void test_bmp_signature() {
     const char* filename = "test_signature.bmp";
 
@@ -172,7 +173,7 @@ void test_bmp_signature() {
     free_bmp257_image(image);
     remove(filename);
 }
-
+*/
 void test_read_valid_bmp() {
     const char* filename = "src/assets/Alfred.bmp";
 

@@ -1,4 +1,4 @@
-#include <tests_lagrange.h>
+#include <tests_enc_dec.h>
 
 
 void test_flatten_unflatten() {
@@ -75,34 +75,41 @@ int compare_polys(Mod257Pixel* a, Mod257Pixel* b, int k) {
     return 1;
 }
 
-void test_cover_and_recover() {
-    const int k = 9;
-    const int n = 9;
+void test_cover_and_recover_k(const int k, const int n, const char * file_path, const char * out_path) {
     const uint16_t seed = 1000;
     const char* cover_files[] = {
         "assets/Alfredssd.bmp", "assets/Albertssd.bmp", "assets/Audreyssd.bmp",
         "assets/Evassd.bmp", "assets/Facundo.bmp", "assets/Gustavossd.bmp",
         "assets/Jamesssd.bmp", "assets/Marilynssd.bmp", 
-        "assets/Jamesssd.bmp", "assets/Marilynssd.bmp"  // extras
+        "assets/Jamesssd.bmp", "assets/Marilynssd.bmp","assets/Alfredssd.bmp",
+        "assets/Albertssd.bmp","assets/Audreyssd.bmp","assets/Evassd.bmp",
+        "assets/Facundo.bmp","assets/Gustavossd.bmp","assets/Jamesssd.bmp",
+        "assets/Marilynssd.bmp","assets/Jamesssd.bmp","assets/Marilynssd.bmp",
+        "assets/Albertssd.bmp","assets/Audreyssd.bmp","assets/Evassd.bmp",
+        "assets/Facundo.bmp","assets/Gustavossd.bmp","assets/Jamesssd.bmp",NULL  // extras
     };
 
-    BMP257Image* original_secret = read_bmp_257("assets/Alfredssd.bmp");
+    BMP257Image* original_secret = read_bmp_257(file_path);
 
     // Cover the secret into shares
     cover_in_files_v2(original_secret, cover_files, k, n, seed);
 
     // Recover using a subset of k shares
-    const char* subset[10] = {
+    const char* subset[21] = {
         "encodings/share1.bmp", "encodings/share2.bmp", "encodings/share3.bmp",
         "encodings/share4.bmp", "encodings/share5.bmp", "encodings/share6.bmp",
         "encodings/share7.bmp", "encodings/share8.bmp", "encodings/share9.bmp",
+        "encodings/share10.bmp","encodings/share11.bmp", "encodings/share12.bmp",
+        "encodings/share13.bmp", "encodings/share14.bmp", "encodings/share15.bmp",
+        "encodings/share16.bmp", "encodings/share17.bmp", "encodings/share18.bmp",
+        "encodings/share19.bmp", "encodings/share20.bmp",
         NULL
     };
-    const char* recovered_file = "encodings/hola2.bmp";
-    recover_from_files_v2(k, n, subset, recovered_file);
+
+    recover_from_files_v2(k, n, subset, out_path);
 
     // Load recovered image
-    BMP257Image* recovered_image = read_bmp_257(recovered_file);
+    BMP257Image* recovered_image = read_bmp_257(out_path);
     if (!recovered_image) {
         fprintf(stderr, "Failed to load recovered image.\n");
         free_bmp257_image(original_secret);
