@@ -2,11 +2,9 @@ GCC=gcc
 
 GCCFLAGS=-Wall -fdiagnostics-color=always -pedantic -I./src/utils/headers
 
-ifneq ($(DEBUG), 0)
-GCCFLAGS += -g -fsanitize=address
-else
+
 GCCFLAGS += -O2
-endif
+
 
 TESTS_SRC = $(wildcard src/tests/*.c)
 UTILS_SRC = $(wildcard src/utils/*.c)
