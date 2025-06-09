@@ -1,5 +1,5 @@
-#ifndef TESTS_LAGRANGE_H
-#define TESTS_LAGRANGE_H
+#ifndef TESTS_ENC_DEC_H
+#define TESTS_ENC_DEC_H
 
 #include <stdio.h>
 #include <stdlib.h>
