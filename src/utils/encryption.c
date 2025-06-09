@@ -253,7 +253,7 @@ void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int 
                     flat_pixels[pixel_idx].value = (flat_pixels[pixel_idx].value & 0xFC) | ((secret_val >> (6 - 2 * bit_idx)) & 0x3);
                 }
 
-            }else{
+            }else if (k == 3){
                 for (int bit_idx = 0; bit_idx < 3; bit_idx++) { // [ 1 1 1 | 1 1 1 | 1 1 ] => los 2 primeros 5, 2 
                     int pixel_idx = j * k + bit_idx;
                     if (pixel_idx >= total_pixels) break;  // Only embed within original bounds
@@ -262,6 +262,12 @@ void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int 
                     else
                         flat_pixels[pixel_idx].value = (flat_pixels[pixel_idx].value & 0xF8) | ((secret_val<< 1) & 0x7);
 
+                }
+            } else {
+                for (int bit_idx = 0; bit_idx < 2; bit_idx++) {
+                    int pixel_idx = j * k + bit_idx;
+                    if (pixel_idx >= total_pixels) break;  // Only embed within original bounds
+                    flat_pixels[pixel_idx].value = (flat_pixels[pixel_idx].value & 0xF0) | ((secret_val >> (4 - 4 * bit_idx)) & 0xF);
                 }
             }
             

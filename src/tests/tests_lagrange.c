@@ -156,8 +156,8 @@ int compare_polys(Mod257Pixel* a, Mod257Pixel* b, int k) {
 }
 
 void test_cover_and_recover() {
-    const int k = 3;
-    const int n = 8;
+    const int k = 9;
+    const int n = 9;
     const uint16_t seed = 1000;
     const char* cover_files[] = {
         "assets/Alfredssd.bmp", "assets/Albertssd.bmp", "assets/Audreyssd.bmp",
@@ -172,10 +172,10 @@ void test_cover_and_recover() {
     cover_in_files_v2(original_secret, cover_files, k, n, seed);
 
     // Recover using a subset of k shares
-    const char* subset[9] = {
+    const char* subset[10] = {
         "encodings/share1.bmp", "encodings/share2.bmp", "encodings/share3.bmp",
         "encodings/share4.bmp", "encodings/share5.bmp", "encodings/share6.bmp",
-        "encodings/share7.bmp", "encodings/share8.bmp",
+        "encodings/share7.bmp", "encodings/share8.bmp", "encodings/share9.bmp",
         NULL
     };
     const char* recovered_file = "encodings/hola2.bmp";

@@ -165,7 +165,7 @@ void recover_from_files_v2(int k, int n, const char** cover_files, char* output_
                     if (pixel_idx < total_pixels)
                         byte |= (flat_pixels[pixel_idx].value & 0x3); // 0000 0011
                 }
-            }else{
+            }else if (k == 3) {
                 for (int b = 0; b < 3; b++) {
                     int pixel_idx = j * k + b;
                     if(b != 2){
@@ -179,6 +179,13 @@ void recover_from_files_v2(int k, int n, const char** cover_files, char* output_
                             byte |= (val & 0x3);
                         }
                     }
+                }
+            } else {
+                for (int b = 0; b < 2; b++) {
+                    int pixel_idx = j * k + b;
+                    byte <<= 4;
+                    if (pixel_idx < total_pixels)
+                        byte |= (flat_pixels[pixel_idx].value & 0xF);
                 }
             }
 
