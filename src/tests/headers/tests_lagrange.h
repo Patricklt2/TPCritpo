@@ -3,13 +3,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <lagrange.h>
 #include <assert.h>
 #include <encryption.h>
 #include <decryption.h>
 
-void lagrangeTests();
-void inverseModTests();
 void test_flatten_unflatten(); 
 
 void print_coeffs(const char* label, Mod257Pixel* coeffs, int k);
