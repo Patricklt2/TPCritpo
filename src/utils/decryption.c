@@ -168,15 +168,16 @@ void recover_from_files_v2(int k, int n, const char** cover_files, char* output_
             }else{
                 for (int b = 0; b < 3; b++) {
                     int pixel_idx = j * k + b;
-                    if(b != 3){
+                    if(b != 2){
                         byte <<= 3;
                         if (pixel_idx < total_pixels)
                             byte |= (flat_pixels[pixel_idx].value & 0x7); // 0000 0111
                     }else{
                         byte <<= 2;
-                        char val = flat_pixels[pixel_idx].value >> 1;
-                        if (pixel_idx < total_pixels)
+                        if (pixel_idx < total_pixels){
+                            char val = flat_pixels[pixel_idx].value >> 1;
                             byte |= (val & 0x3);
+                        }
                     }
                 }
             }
