@@ -10,3 +10,5 @@ make all
 /bin/main.out -d --secret assets/Albertssd.bmp -k 8 -n 8
 
 ./bin/main.out -r --secret encodings/hola.bmp -k 8 -n 8
+
+## Tener en cuenta que el path de base de los archivos que se pasan es ./src/ 
