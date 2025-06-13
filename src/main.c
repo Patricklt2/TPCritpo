@@ -18,16 +18,10 @@
 
         //Put cover file paths tour Current Working Directory (base path) will be ./src/ at first. Keep that in mind when assigning path. Must be null terminated.
         char** coverfiles;
-        static char *default_coverfiles[] = {
-            "assets/Alfredssd.bmp","assets/Albertssd.bmp","assets/Audreyssd.bmp","assets/Evassd.bmp","assets/Facundo.bmp","assets/Gustavossd.bmp","assets/Jamesssd.bmp","assets/Marilynssd.bmp","assets/Jamesssd.bmp","assets/Marilynssd.bmp", NULL
-        };
        
         //Put encoded file paths your Current Working Directory (base path) will be ./src/ at first. Keep that in mind when assigning path. Must be NULL terminated
         char** encodedFiles;
                     //Put encoded file paths your Current Working Directory (base path) will be ./src/ at first. Keep that in mind when assigning path. Must be NULL terminated
-        static char *default_encodedFiles[] = {
-            "encodings/share1.bmp", "encodings/share2.bmp", "encodings/share3.bmp", "encodings/share4.bmp", "encodings/share5.bmp", "encodings/share6.bmp", "encodings/share7.bmp", "encodings/share8.bmp", "encodings/share9.bmp", "encodings/share10.bmp", NULL
-        };
         
         
         if (arguments->dir != NULL) {
@@ -43,9 +37,15 @@
                 goto free;
             }
         }else{
-            //Put cover file paths tour Current Working Directory (base path) will be ./src/ at first. Keep that in mind when assigning path. Must be null terminated.
-            coverfiles = default_coverfiles;
-            encodedFiles = default_encodedFiles;
+            if (arguments->distribute){
+                coverfiles = list_files_with_null(NULL);
+                
+            }else if (arguments->recover){
+                encodedFiles = list_files_with_null(NULL);
+            }else {
+                fprintf(stderr, "Error: Invalid operation specified\n");
+                goto free;
+            }
         }
 
         if ( arguments->distribute ){

@@ -41,7 +41,7 @@ int shamir_recover(int k, char* output_file, int n, char** cover_files) {
         return 1; // Return error code
     }
     int count = count_files(cover_files);
-    char* aux = cover_files[count+1]; // access after the null terminated for path
+    char* aux = getcwd(NULL, 0); // Get current working directory
 
     char* complete_file_name = malloc(strlen(output_file)+ strlen(aux) + 2);
     complete_file_name = strcpy(complete_file_name, aux);

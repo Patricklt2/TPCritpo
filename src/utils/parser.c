@@ -135,7 +135,7 @@ bool parse_args(int argc, char **argv, Args *args) {
         return false;
     }
 
-    char* base_path = "./src/";
+    char* base_path = getcwd(NULL, 0);
     char* complete_filename = malloc(strlen(secret_file) + strlen(base_path) + 1);
     complete_filename = strcpy(complete_filename, base_path);
 

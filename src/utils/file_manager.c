@@ -396,16 +396,24 @@ char **list_files_with_null(char *route_name) {
         perror("getpwd");
         return NULL;
     }
-    char *route = malloc(strlen(route_base) + strlen(route_name) + 6); // +1 for '/' and +1 for '\0'
+    char *route;
+    if ( route_name != NULL ){
+            route = malloc(strlen(route_base) + strlen(route_name) + 2); // +1 for '/' and +1 for '\0'
+    }else{
+            route = malloc(strlen(route_base) + 1); // +1 for '/' and +1 for '\0'
+    }
+
     if (!route) {
         perror("malloc");
         free(route_base);
         return NULL;
     }
     strcpy(route, route_base);
-    strcat(route, "/src/");
-    strcat(route, route_name);
-    free(route_base); // Free the base path after use
+    if ( route_name != NULL ){
+        strcat(route, "/");
+        strcat(route, route_name);
+        free(route_base); // Free the base path after use
+    }
 
     printf("Listing files in: %s\n", route); // Debugging line
     // Primera pasada: contar los archivos

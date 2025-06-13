@@ -14,9 +14,8 @@ int shamir_distribute( int k, char* file_name, int n, char** cover_files) {
         return 1; // Return error code
     }
 
-    int count = count_files(cover_files);
-    char* aux = cover_files[count+1]; // access after the null terminated for path
 
+    char* aux = getcwd(NULL, 0); // Get current working directory
     char* complete_file_name = malloc(strlen(file_name)+ strlen(aux) + 2);
     complete_file_name = strcpy(complete_file_name, aux);
     complete_file_name = strcat(complete_file_name, "/");
