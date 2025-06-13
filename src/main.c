@@ -59,11 +59,11 @@
                 goto free;
             }
             printf("Distributing secret image: %s\n", arguments->secret);
-            shamir_distribute(arguments->k, arguments->secret, (arguments->n == 0) ? arguments->n:arguments->k, coverfiles);
+            shamir_distribute(arguments->k, arguments->secret, (arguments->n == 0) ? arguments->k:arguments->n, coverfiles);
         }else if ( arguments->recover ){
             printf("Recovering secret image from shares with k=%d\n", arguments->k);
 
-            shamir_recover(arguments->k, arguments->secret, (arguments->n == 0) ? arguments->n:arguments->k, encodedFiles); // Assuming you will handle the input files later
+            shamir_recover(arguments->k, arguments->secret, (arguments->n == 0) ? arguments->k:arguments->n, encodedFiles); // Assuming you will handle the input files later
         } else {
             fprintf(stderr, "Error: Invalid operation specified\n");
             goto free;

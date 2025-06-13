@@ -6,7 +6,6 @@ BMP257Image* read_bmp_257(char* filename) {
     }
 
     FILE* file = fopen(filename, "rb");
-    free(filename);  // Free the filename buffer immediately after use
     if (!file) {
         perror("Error opening file");
         return NULL;

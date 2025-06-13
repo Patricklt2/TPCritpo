@@ -290,7 +290,6 @@ void cover_in_files_v2(BMP257Image* secret_image, char** cover_files, int k, int
         complete_file_name = strcat(complete_file_name, output_filename);
 
         printf("Complete file name: %s\n", complete_file_name); // Debugging line
-
         
         write_bmp_257(carrier, complete_file_name);
 
