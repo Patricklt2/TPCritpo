@@ -1,16 +1,43 @@
 
 # TPCripto
-## Se agarra el current working directory de donde uno ejecuta el programa
-## Cualquier carpeta que se quiera agregar por simplicidad de lectura de archivos, seteamos como base src/, si se agrega una carpeta assets/, encodings/, etc debe ser ahí.
-## Si 
+## Se agarra el current working directory desde donde uno ejecuta el programa 
 
 # Ejemplo de uso:
 
 ## Compila el proyecto y genera el ejecutable en ./bin/main.out
 make all
+
+## ./<pathToFile>main.out -d --secret <pathToSecretFile>.bmp -k k -n n --dir <pathToCoverFilesFolder>
+
+## ./<pathToFile>main.out -r --secret <pathToRecoverFile>.bmp -k k -n n --dir <pathToCoverFilesFolder>
+
 ## Ejecutar el programa con los parámetros deseados:
-/bin/main.out -d --secret Albertssd.bmp -k 8 -n 8 --dir assets/
 
-./bin/main.out -r --secret hola.bmp -k 8 -n 8 --dir encodings/
+## Ejemplos de uso
+## Si estuviera en la carpeta TPCritpo y el main.out siguiera en /bin
 
-## Tener en cuenta que el path de base de los archivos que se pasan es ./src/ 
+./bin/main.out -d --secret src/assets/Alfredssd.bmp -k 8 -n 8 --dir src/assets
+
+# Esto me generaria todas las shares en el CWD en el que uno ejecuto el programa en este caso, TPCritpo
+# Tendrias que mover esos .bmp o al menos k .bmp a una carpeta y luego correr el comando con el path
+# Nosotros las movimos a src/encodings
+# Para recuperar con esas
+
+./bin/main.out -r --secret secretoRecuperado.bmp -k 8 -n 8 --dir src/encodings
+
+# Recupera el secreto y lo deja en el CWD en este caso, pues solo se asigno un filename
+
+#Importante, la carpeta donde esten los .bmp para esconder o mismo para recuperar solo debe contener bmps, el programa si no, fallara
+
+# otro ejemplo
+# estando en una carpeta con archivos para recuperar. Por eso debe ser un directorio solo con los .bmp
+./bin/main.out -r --secret secretoRecuperado.bmp -k 8 -n 8
+
+# Sin pasarle el n, tomara directamente los coverfiles en el directorio actual. Por eso debe ser un directorio solo con los .bmp
+./bin/main.out -r --secret secretoRecuperado.bmp -k 8
+
+# estando en una carpeta con archivos para usar de cover. Por eso debe ser un directorio solo con los .bmp
+./bin/main.out -d --secret ../misecreto/secreto.bmp -k 6 -n 8
+
+# estando en una carpeta con archivos para usar de cover. Por eso debe ser un directorio solo con los .bmp
+./bin/main.out -d --secret ../misecreto/secreto.bmp -k 6
