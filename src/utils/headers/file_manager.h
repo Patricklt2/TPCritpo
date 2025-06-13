@@ -4,11 +4,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-
+#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <unistd.h>
+#include <limits.h>
+
 
 // Disable struct padding for exact binary matching
 #pragma pack(push, 1)
@@ -69,7 +72,7 @@ typedef struct {
  * @param filename Path to the BMP file
  * @return Pointer to BMP257Image structure, NULL on error
  */
-BMP257Image* read_bmp_257(const char* filename);
+BMP257Image* read_bmp_257(char* filename);
 
 /**
  * Gets the actual modulo 257 value from a pixel
@@ -137,7 +140,7 @@ BMP257Image* create_bmp_257(Mod257Pixel** pixels, int width, int height);
  * @param filename Path to save the BMP file
  * @return 0 on success, -1 on error
  */
-int write_bmp_257(const BMP257Image* image, const char* filename);
+int write_bmp_257(const BMP257Image* image, char* filename);
 
 /**
  * Embeds a seed value into the reserved fields of a BMP257Image
@@ -152,4 +155,10 @@ void embed_seed(BMP257Image* image, uint16_t seed);
  * @param index shadow index value to embed
  */
 void embed_shadow_index(BMP257Image* image, uint16_t index);
+
+char **list_files_with_null(char *route_name);
+
+void free_files(char **list);
+int count_files(char** list);
+
 #endif

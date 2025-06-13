@@ -4,7 +4,7 @@
 #include <decryption.h>
 #include <encryption.h>
 
-int check_seed(const char** cover_files, int k){
+int check_seed(char** cover_files, int k){
     BMP257Image* first_cover = read_bmp_257(cover_files[0]);
     if (!first_cover) {
         fprintf(stderr, "Error reading first cover file\n");
@@ -30,7 +30,7 @@ int check_seed(const char** cover_files, int k){
     return 0; // Return 0 if all seeds match
 }
 
-int shamir_recover(int k, char* output_file, int n, const char** cover_files) {
+int shamir_recover(int k, char* output_file, int n, char** cover_files) {
     if (n < k) {
         fprintf(stderr, "Error: n must be greater than or equal to k\n");
         return 1; // Return error code
@@ -40,8 +40,16 @@ int shamir_recover(int k, char* output_file, int n, const char** cover_files) {
         fprintf(stderr, "Error: Invalid seed in cover files\n");
         return 1; // Return error code
     }
-    
-    recover_from_files_v2(k, n, cover_files, output_file);
+    int count = count_files(cover_files);
+    char* aux = cover_files[count+1]; // access after the null terminated for path
+
+    char* complete_file_name = malloc(strlen(output_file)+ strlen(aux) + 2);
+    complete_file_name = strcpy(complete_file_name, aux);
+    complete_file_name = strcat(complete_file_name, "/");
+    complete_file_name = strcat(complete_file_name, output_file);
+    printf("Complete file name: %s\n", complete_file_name); // Debugging line
+
+    recover_from_files_v2(k, n, cover_files, complete_file_name);
 
     return 0; // Return 0 on success
 
@@ -123,7 +131,7 @@ void recover_polynomial(int* x_coords, Mod257Pixel* shares, int k, Mod257Pixel* 
 }
 
 //Auxiliar function
-int count_strings(const char **arr) {
+int count_strings(char **arr) {
     int count = 0;
     while (arr[count] != NULL) {
         count++;
@@ -133,7 +141,7 @@ int count_strings(const char **arr) {
 
 // I need to create the array from k shadows
 // process pixels and unflatten array
-void recover_from_files_v2(int k, int n, const char** cover_files, char* output_file) {
+void recover_from_files_v2(int k, int n, char** cover_files, char* output_file) {
     int shadow_indices[n];
     int shadow_count = count_strings(cover_files);
 

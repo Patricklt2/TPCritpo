@@ -3,7 +3,7 @@
 
 #define MAX_BYTES 300*(300/8)
 
-int shamir_distribute( int k, const char* file_name, int n, const char** cover_files) {
+int shamir_distribute( int k, char* file_name, int n, char** cover_files) {
 
     // Placeholder for the actual implementation of Shamir's Secret Sharing distribution
     // This function should distribute the secret image into n shares using k as the threshold
@@ -14,9 +14,19 @@ int shamir_distribute( int k, const char* file_name, int n, const char** cover_f
         return 1; // Return error code
     }
 
-    BMP257Image* secret_image = read_bmp_257(file_name);
+    int count = count_files(cover_files);
+    char* aux = cover_files[count+1]; // access after the null terminated for path
+
+    char* complete_file_name = malloc(strlen(file_name)+ strlen(aux) + 2);
+    complete_file_name = strcpy(complete_file_name, aux);
+    complete_file_name = strcat(complete_file_name, "/");
+    complete_file_name = strcat(complete_file_name, file_name);
+
+    printf("Complete file name: %s\n", complete_file_name); // Debugging line
+
+    BMP257Image* secret_image = read_bmp_257(complete_file_name);
     if (!secret_image) {
-        fprintf(stderr, "Error reading secret image '%s'\n", file_name);
+        fprintf(stderr, "Error reading secret image '%s'\n", complete_file_name);
         return 1; // Return error code
     }
 
@@ -192,7 +202,7 @@ void flatten_matrix(Mod257Pixel** matrix, int height, int width, Mod257Pixel* fl
 }
 
 
-void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int k, int n, uint16_t seed) {
+void cover_in_files_v2(BMP257Image* secret_image, char** cover_files, int k, int n, uint16_t seed) {
     int height = secret_image->info_header.height;
     int width = secret_image->info_header.width;
     int total_pixels = height * width;
@@ -269,9 +279,20 @@ void cover_in_files_v2(BMP257Image* secret_image, const char** cover_files, int 
         carrier->file_header.reserved1 = i + 1;
         carrier->file_header.reserved2 = seed;
 
+        int count = count_files(cover_files);
+        char* aux = cover_files[count+1]; // access after the null terminated for path
         char output_filename[256];
-        snprintf(output_filename, sizeof(output_filename), "encodings/share%d.bmp", i + 1);
-        write_bmp_257(carrier, output_filename);
+        snprintf(output_filename, sizeof(output_filename), "share%d.bmp", i + 1);
+
+        char* complete_file_name = malloc(strlen(output_filename)+ strlen(aux) + 2);
+        complete_file_name = strcpy(complete_file_name, aux);
+        complete_file_name = strcat(complete_file_name, "/");
+        complete_file_name = strcat(complete_file_name, output_filename);
+
+        printf("Complete file name: %s\n", complete_file_name); // Debugging line
+
+        
+        write_bmp_257(carrier, complete_file_name);
 
         free(flat_pixels);
         free_bmp257_image(carrier);

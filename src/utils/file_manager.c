@@ -1,22 +1,12 @@
 #include <file_manager.h>
-BMP257Image* read_bmp_257(const char* filename) {
+BMP257Image* read_bmp_257(char* filename) {
     if (!filename) {
         fprintf(stderr, "Invalid filename\n");
         return NULL;
     }
 
-    char* base_path = "./src/";
-    char* complete_filename = malloc(strlen(filename) + strlen(base_path) + 1);
-    if (!complete_filename) {
-        perror("Memory allocation failed");
-        return NULL;
-    }
-    
-    strcpy(complete_filename, base_path);
-    strcat(complete_filename, filename);
-
-    FILE* file = fopen(complete_filename, "rb");
-    free(complete_filename);  // Free the filename buffer immediately after use
+    FILE* file = fopen(filename, "rb");
+    free(filename);  // Free the filename buffer immediately after use
     if (!file) {
         perror("Error opening file");
         return NULL;
@@ -327,19 +317,14 @@ BMP257Image* create_bmp_257(Mod257Pixel** pixels, int width, int height) {
     return image;
 }
 
-int write_bmp_257(const BMP257Image* image, const char* filename){
+int write_bmp_257(const BMP257Image* image, char* filename){
 
     if (!image || !filename) {
         fprintf(stderr, "Invalid image or filename\n");
         return -1;
     }
 
-    char* base_path = "./src/";
-    char* complete_filename = malloc(strlen(filename) + strlen(base_path) + 1);
-    complete_filename = strcpy(complete_filename, base_path);
-    complete_filename = strcat(complete_filename, filename);
-
-    FILE* file = fopen(complete_filename, "wb");
+    FILE* file = fopen(filename, "wb");
     if (!file) {
         perror("Error opening file for writing");
         return -1;
@@ -387,7 +372,6 @@ int write_bmp_257(const BMP257Image* image, const char* filename){
         }
     }
 
-    free(complete_filename);
     free(row_buffer);
     fclose(file);
     return 0;
@@ -400,4 +384,96 @@ void embed_seed(BMP257Image* image, uint16_t seed) {
 
 void embed_shadow_index(BMP257Image* image, uint16_t index) {
     image->file_header.reserved2 = index;
+}
+
+
+char **list_files_with_null(char *route_name) {
+    DIR *dir;
+    struct dirent *entry;
+    int count = 0;
+
+    char* route_base = getcwd(NULL, 0); // Get current working directory
+    if (!route_base) {
+        perror("getpwd");
+        return NULL;
+    }
+    char *route = malloc(strlen(route_base) + strlen(route_name) + 6); // +1 for '/' and +1 for '\0'
+    if (!route) {
+        perror("malloc");
+        free(route_base);
+        return NULL;
+    }
+    strcpy(route, route_base);
+    strcat(route, "/src/");
+    strcat(route, route_name);
+    free(route_base); // Free the base path after use
+
+    printf("Listing files in: %s\n", route); // Debugging line
+    // Primera pasada: contar los archivos
+    dir = opendir(route);
+    if (!dir) {
+        perror("No se pudo abrir el directorio");
+        return NULL;
+    }
+    while ((entry = readdir(dir)) != NULL) {
+        if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0)
+            count++;
+    }
+    closedir(dir);
+
+    // Assigning memory for file names, 1 for NULL terminator and the route at the end
+    char **files = malloc((count + 2) * sizeof(char *));
+    if (!files) {
+        perror("malloc");
+        return NULL;
+    }
+    printf("Number of files: %d\n", count); // Debugging line
+    // Segunda pasada: guardar los files
+    dir = opendir(route);
+    if (!dir) {
+        perror("No se pudo abrir el directorio");
+        free(files);
+        return NULL;
+    }
+
+    int i = 0;
+    while ((entry = readdir(dir)) != NULL) {
+        if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+            char* file = strdup(entry->d_name);
+            files[i] = malloc(strlen(file)+ strlen(route) + 2); // +1 for '\0', +1 for '/'
+            files[i] = strcpy(files[i], route);
+            files[i] = strcat(files[i], "/");
+            files[i] = strcat(files[i], file);
+            free(file); // Free the temporary file name
+            printf("File %d: %s\n", i, files[i]); // Debugging line
+            if (!files[i]) {
+                perror("strdup");
+                for (int j = 0; j < i; j++) free(files[j]);
+                free(files);
+                closedir(dir);
+                return NULL;
+            }
+            i++;
+        }
+    }
+    files[i] = NULL;
+    files[i+1] = route; // Store the route at the end of the list
+    closedir(dir);
+
+    return files;
+}
+
+void free_files(char **list) {
+    for (int i = 0; list[i] != NULL; i++) {
+        free(list[i]);
+    }
+    free(list);
+}
+
+int count_files(char** list){
+    int count = 0;
+    while (list[count] != NULL) {
+        count++;
+    }
+    return count;
 }
