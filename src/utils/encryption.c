@@ -9,7 +9,15 @@ int shamir_distribute( int k, char* file_name, int n, char** cover_files) {
     // This function should distribute the secret image into n shares using k as the threshold
     printf("Distributing secret image '%s' into %d shares with a threshold of %d\n", file_name, n, k);
     
-    if ( n < k ) {
+    int images = n;
+
+    if ( images == 0 ){
+        images = count_files(cover_files);
+    }
+
+
+
+    if ( images < k ) {
         fprintf(stderr, "Error: n must be greater than or equal to k\n");
         return 1; // Return error code
     }
@@ -29,7 +37,7 @@ int shamir_distribute( int k, char* file_name, int n, char** cover_files) {
         return 1; // Return error code
     }
 
-    cover_in_files_v2( secret_image, cover_files, k, n, (uint16_t) rand());
+    cover_in_files_v2( secret_image, cover_files, k, images, (uint16_t) rand());
     
     return 0; // Return 0 on success
 }
@@ -278,8 +286,7 @@ void cover_in_files_v2(BMP257Image* secret_image, char** cover_files, int k, int
         carrier->file_header.reserved1 = i + 1;
         carrier->file_header.reserved2 = seed;
 
-        int count = count_files(cover_files);
-        char* aux = cover_files[count+1]; // access after the null terminated for path
+        char* aux = getcwd(NULL, 0); // Get current working directory
         char output_filename[256];
         snprintf(output_filename, sizeof(output_filename), "share%d.bmp", i + 1);
 

@@ -31,7 +31,14 @@ int check_seed(char** cover_files, int k){
 }
 
 int shamir_recover(int k, char* output_file, int n, char** cover_files) {
-    if (n < k) {
+
+    int images = n;
+
+    if (images == 0) {
+        images = count_files(cover_files);
+    }
+
+    if (images < k) {
         fprintf(stderr, "Error: n must be greater than or equal to k\n");
         return 1; // Return error code
     }
@@ -40,7 +47,6 @@ int shamir_recover(int k, char* output_file, int n, char** cover_files) {
         fprintf(stderr, "Error: Invalid seed in cover files\n");
         return 1; // Return error code
     }
-    int count = count_files(cover_files);
     char* aux = getcwd(NULL, 0); // Get current working directory
 
     char* complete_file_name = malloc(strlen(output_file)+ strlen(aux) + 2);
@@ -49,7 +55,7 @@ int shamir_recover(int k, char* output_file, int n, char** cover_files) {
     complete_file_name = strcat(complete_file_name, output_file);
     printf("Complete file name: %s\n", complete_file_name); // Debugging line
 
-    recover_from_files_v2(k, n, cover_files, complete_file_name);
+    recover_from_files_v2(k, images, cover_files, complete_file_name);
 
     return 0; // Return 0 on success
 
