@@ -169,7 +169,7 @@ void  flatten_mod257_matrix(Mod257Pixel** pixels, int width, int height, Mod257P
     for (int row = 0; row < height; row++) {
         for (int col = 0; col < width; col++) {
             // Reverse row order (last row becomes first in flattened array)
-            flat[row*width + col].value = pixels[row][col].value; // Ensure mod 257
+            flat[row*width + col] = pixels[row][col]; // Ensure mod 257
         }
     }
 
@@ -229,7 +229,7 @@ void recover_from_files_v2(int k, int n, char** cover_files, char* output_file) 
             continue;
         }
 
-        flatten_mod257_matrix(cover->pixels, height, width, flat_pixels);
+        flatten_mod257_matrix(cover->pixels, width, height, flat_pixels);
 
     char dumpFilename[300];
     snprintf(dumpFilename, sizeof(dumpFilename), "cover{%d}.txt", i);
@@ -372,7 +372,7 @@ void unprocess_image_partial_v2(BMP257Image *image, Mod257Pixel **processed_pixe
     }
 
     scramble_flattened_image_xor(flattened_pixels, total_pixels, seed);
-    unflatten_matrix(flattened_pixels, height, width, image->pixels);
+    unflatten_mod257_matrix(image->pixels, width, height, flattened_pixels);
 
     free(flattened_pixels);
 }
