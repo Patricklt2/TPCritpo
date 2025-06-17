@@ -378,7 +378,7 @@ int write_bmp_257(const BMP257Image* image, char* filename){
     }
 
     // Write rows (BMP stores bottom row first)
-    for (int y = height - 1; y >= 0; y--) {
+    for (int y = 0; y < height; y++) {
         for (int x = 0; x < image->info_header.width; x++) {
             row_buffer[x] = get_mod257_value(image->pixels[y][x]);
         }
