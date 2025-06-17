@@ -147,6 +147,34 @@ int count_strings(char **arr) {
 
 // I need to create the array from k shadows
 // process pixels and unflatten array
+
+
+void unflatten_mod257_matrix(Mod257Pixel** matrix, int width, int height, const Mod257Pixel* flat) {
+    if (!matrix || !flat) return;
+
+    for (int row = 0; row < height; row++) {
+        for (int col = 0; col < width; col++) {
+            // Reconstruct matrix by reversing the flattening order
+            matrix[height - 1 - row][col] = flat[row * width + col];
+        }
+    }
+}
+
+void  flatten_mod257_matrix(Mod257Pixel** pixels, int width, int height, Mod257Pixel* flat) {
+    if (!pixels || !flat || width <= 0 || height <= 0) {
+        fprintf(stderr, "Invalid input dimensions\n");
+        return ;
+    }
+
+    for (int row = 0; row < height; row++) {
+        for (int col = 0; col < width; col++) {
+            // Reverse row order (last row becomes first in flattened array)
+            flat[row*width + col] = pixels[row][col]; // Ensure mod 257
+        }
+    }
+
+    return;
+}
 void recover_from_files_v2(int k, int n, char** cover_files, char* output_file) {
     int shadow_indices[n];
     int shadow_count = count_strings(cover_files);
@@ -200,7 +228,25 @@ void recover_from_files_v2(int k, int n, char** cover_files, char* output_file) 
             continue;
         }
 
-        flatten_matrix(cover->pixels, height, width, flat_pixels);
+        flatten_mod257_matrix(cover->pixels, height, width, flat_pixels);
+
+    char dumpFilename[300];
+    snprintf(dumpFilename, sizeof(dumpFilename), "cover{%d}.txt", i);
+
+    FILE* dumpFile = fopen(dumpFilename, "wb");
+
+    if (dumpFile) {
+
+        for (int y = 0; y < total_pixels; y++) {
+                fprintf(dumpFile, "%02X ", flat_pixels[y].value);
+                if((y+1) % 16 == 0)
+                    fprintf(dumpFile, "\n");
+        }
+
+        fclose(dumpFile);
+    } else {
+        fprintf(stderr, "Could not open pixels_dump.txt for writing\n");
+    }
 
         for (int j = 0; j < padded_pixels / k; j++) {
             uint8_t byte = 0;
@@ -250,6 +296,24 @@ void recover_from_files_v2(int k, int n, char** cover_files, char* output_file) 
         if (i != 0) free_bmp257_image(cover);
     }
 
+    FILE *fp = fopen("shadows_output.txt", "w");
+    if (!fp) {
+        fprintf(stderr, "Error opening shadows output file\n");
+        // You can decide whether to continue or return here
+    }
+
+    fprintf(fp, "Recovered shadows:\n");
+    for (int shadow = 0; shadow < n; shadow++) {
+        fprintf(fp, "Shadow %d (shadow_indices[%d] = %d):\n", shadow + 1, shadow, shadow_indices[shadow]);
+        for (int j = 0; j < padded_pixels / k; j++) {
+            fprintf(fp, "%02X ", processed_pixels[j][shadow_indices[shadow] - 1].value);
+            if ((j + 1) % 16 == 0) fprintf(fp, "\n");  // 16 bytes per line
+        }
+        fprintf(fp, "\n\n");
+    }
+
+    fclose(fp);
+    
     BMP257Image *outImage = create_bmp_257(NULL, width, height);
     if (!outImage) {
         fprintf(stderr, "Error creating output image\n");

@@ -123,7 +123,7 @@ BMP257Image* read_bmp_257(char* filename) {
     fseek(file, image->file_header.pixel_offset, SEEK_SET);
 
     // Read rows (BMP stores bottom row first)
-    for (int y = height - 1; y >= 0; y--) {
+    for (int y = 0; y < height; y++) {
         if (fread(row_buffer, 1, row_padded, file) != row_padded) {
             free(row_buffer);
             for (int i = 0; i < height; i++) free(image->pixels[i]);
@@ -152,6 +152,29 @@ BMP257Image* read_bmp_257(char* filename) {
     }
 
     free(row_buffer);
+    /*
+    char dumpFilename[300];
+    snprintf(dumpFilename, sizeof(dumpFilename), "%s.txt", filename);
+
+    FILE* dumpFile = fopen(dumpFilename, "wb");
+
+if (dumpFile) {
+    int width = image->info_header.width;
+    int height = abs(image->info_header.height);
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            // You can choose the format, here decimal and hex with flag:
+            fprintf(dumpFile, "%02X ", 
+                image->pixels[y][x].value);
+        }
+        fprintf(dumpFile, "\n");
+    }
+
+    fclose(dumpFile);
+} else {
+    fprintf(stderr, "Could not open pixels_dump.txt for writing\n");
+}*/
     fclose(file);
     return image;
 }
