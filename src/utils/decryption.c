@@ -154,8 +154,8 @@ void unflatten_mod257_matrix(Mod257Pixel** matrix, int width, int height, const 
 
     for (int row = 0; row < height; row++) {
         for (int col = 0; col < width; col++) {
-            // Reconstruct matrix by reversing the flattening order
-            matrix[height - 1 - row][col] = flat[row * width + col];
+            // Reconstruct in original order (no reversal)
+            matrix[row][col] = flat[row * width + col];
         }
     }
 }
@@ -169,12 +169,13 @@ void  flatten_mod257_matrix(Mod257Pixel** pixels, int width, int height, Mod257P
     for (int row = 0; row < height; row++) {
         for (int col = 0; col < width; col++) {
             // Reverse row order (last row becomes first in flattened array)
-            flat[row*width + col] = pixels[row][col]; // Ensure mod 257
+            flat[row*width + col].value = pixels[row][col].value; // Ensure mod 257
         }
     }
 
     return;
 }
+
 void recover_from_files_v2(int k, int n, char** cover_files, char* output_file) {
     int shadow_indices[n];
     int shadow_count = count_strings(cover_files);
@@ -296,7 +297,7 @@ void recover_from_files_v2(int k, int n, char** cover_files, char* output_file) 
         if (i != 0) free_bmp257_image(cover);
     }
 
-    FILE *fp = fopen("shadows_output.txt", "w");
+    FILE *fp = fopen("shadows_output.txt", "wb");
     if (!fp) {
         fprintf(stderr, "Error opening shadows output file\n");
         // You can decide whether to continue or return here
@@ -322,9 +323,10 @@ void recover_from_files_v2(int k, int n, char** cover_files, char* output_file) 
         free_bmp257_image(first_cover);
         return;
     }
-
+    BMP257Image *outImage2 = create_bmp_257(processed_pixels, width, height);
     unprocess_image_partial_v2(outImage, processed_pixels, k, n, shadow_indices, shadow_count, seed);  // new trim-aware version
 
+    write_bmp_257(outImage2, "hola.bmp");
     write_bmp_257(outImage, output_file);
 
     for (int i = 0; i < padded_pixels / k; i++) free(processed_pixels[i]);
