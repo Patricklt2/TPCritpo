@@ -230,7 +230,7 @@ void recover_from_files_v2(int k, int n, char** cover_files, char* output_file) 
         }
 
         flatten_mod257_matrix(cover->pixels, width, height, flat_pixels);
-
+/*
     char dumpFilename[300];
     snprintf(dumpFilename, sizeof(dumpFilename), "cover{%d}.txt", i);
 
@@ -248,7 +248,7 @@ void recover_from_files_v2(int k, int n, char** cover_files, char* output_file) 
     } else {
         fprintf(stderr, "Could not open pixels_dump.txt for writing\n");
     }
-
+*/
         for (int j = 0; j < padded_pixels / k; j++) {
             uint8_t byte = 0;
             if (k >= 8) { // [ 1 1 1 1 | 1 1 1 1 | 1 1 1 1 | 1 1 1 1 ] => los primeros 8 bits
@@ -296,7 +296,7 @@ void recover_from_files_v2(int k, int n, char** cover_files, char* output_file) 
         free(flat_pixels);
         if (i != 0) free_bmp257_image(cover);
     }
-
+/*
     FILE *fp = fopen("shadows_output.txt", "wb");
     if (!fp) {
         fprintf(stderr, "Error opening shadows output file\n");
@@ -314,7 +314,7 @@ void recover_from_files_v2(int k, int n, char** cover_files, char* output_file) 
     }
 
     fclose(fp);
-    
+    */
     BMP257Image *outImage = create_bmp_257(NULL, width, height);
     if (!outImage) {
         fprintf(stderr, "Error creating output image\n");
@@ -323,10 +323,9 @@ void recover_from_files_v2(int k, int n, char** cover_files, char* output_file) 
         free_bmp257_image(first_cover);
         return;
     }
-    BMP257Image *outImage2 = create_bmp_257(processed_pixels, width, height);
+
     unprocess_image_partial_v2(outImage, processed_pixels, k, n, shadow_indices, shadow_count, seed);  // new trim-aware version
 
-    write_bmp_257(outImage2, "hola.bmp");
     write_bmp_257(outImage, output_file);
 
     for (int i = 0; i < padded_pixels / k; i++) free(processed_pixels[i]);
